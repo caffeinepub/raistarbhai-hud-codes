@@ -1,0 +1,24 @@
+{
+  "name": "Sonu Sir Class",
+  "short_name": "Sonu Sir",
+  "description": "Sonu Sir Class — Ghar Baithe Padho, Safalta Pao. Class 1-12 coaching",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9fc",
+  "theme_color": "#3c52a6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/generated/icon-512x512.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/icon-512x512.dim_512x512.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
