@@ -1,11 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { biharBoard } from "@/data/biharBoardData";
 import { useActor } from "@/hooks/useActor";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Download, FileText } from "lucide-react";
+import { BookOpen, Download, ExternalLink, FileText } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
+import InAppViewer from "./InAppViewer";
 
 const SUBJECTS = [
   {
@@ -55,6 +57,8 @@ function SubjectClassPDFs({
 }: { subject: string; className: string }) {
   const { actor, isFetching } = useActor();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [viewerTitle, setViewerTitle] = useState("");
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -76,7 +80,16 @@ function SubjectClassPDFs({
     enabled: !!actor && !isFetching,
   });
 
-  if (isLoading) {
+  const eVidyarthiMaterials = biharBoard[subject]?.[className] ?? [];
+  const hasContent =
+    eVidyarthiMaterials.length > 0 || (pdfs && pdfs.length > 0);
+
+  const openViewer = (url: string, name: string) => {
+    setViewerUrl(url);
+    setViewerTitle(name);
+  };
+
+  if (isLoading && eVidyarthiMaterials.length === 0) {
     return (
       <div
         className="py-8 text-center text-muted-foreground text-sm"
@@ -88,9 +101,17 @@ function SubjectClassPDFs({
     );
   }
 
-  if (!pdfs || pdfs.length === 0) {
-    return (
-      <>
+  return (
+    <>
+      {viewerUrl && (
+        <InAppViewer
+          url={viewerUrl}
+          title={viewerTitle}
+          onClose={() => setViewerUrl(null)}
+        />
+      )}
+
+      <div className="space-y-2">
         {isOffline && (
           <div
             className="mb-3 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2"
@@ -99,72 +120,121 @@ function SubjectClassPDFs({
             ⚠️ Aap offline hain. Sirf pehle dekhe gaye PDFs milenge.
           </div>
         )}
-        <div className="py-8 text-center" data-ocid="pdf.empty_state">
-          <FileText className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">
-            {className} ke liye abhi koi PDF nahi hai.
-          </p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            Jald hi add kiye jaayenge!
-          </p>
-        </div>
-      </>
-    );
-  }
 
-  return (
-    <div className="space-y-2">
-      {isOffline && (
-        <div
-          className="mb-3 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2"
-          data-ocid="pdf.error_state"
-        >
-          ⚠️ Aap offline hain. Sirf pehle dekhe gaye PDFs milenge.
-        </div>
-      )}
-      {pdfs.map((pdf, i) => (
-        <div
-          key={`${pdf.chapterName}-${i}`}
-          className="flex items-center justify-between gap-3 py-2.5 px-4 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors"
-          data-ocid={`pdf.item.${i + 1}`}
-        >
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <BookOpen className="w-3.5 h-3.5 text-primary" />
+        {/* eVidyarthi Bihar Board Materials */}
+        {eVidyarthiMaterials.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                📚 Bihar Board – eVidyarthi
+              </span>
             </div>
-            <span className="text-sm font-medium text-foreground truncate">
-              {pdf.chapterName}
-            </span>
+            <div className="space-y-2">
+              {eVidyarthiMaterials.map((material, i) => (
+                <div
+                  key={material.name}
+                  className="flex items-center justify-between gap-3 py-2.5 px-4 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100/70 transition-colors"
+                  data-ocid={`pdf.item.${i + 1}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-sm font-medium text-foreground truncate block">
+                        {material.name}
+                      </span>
+                      <Badge className="mt-0.5 text-[9px] px-1.5 py-0 h-4 bg-emerald-600 text-white hover:bg-emerald-700">
+                        eVidyarthi
+                      </Badge>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-3 text-xs border-emerald-400 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 shrink-0 gap-1.5"
+                    onClick={() => openViewer(material.url, material.name)}
+                    data-ocid={`pdf.secondary_button.${i + 1}`}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Padhein
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
-          <a
-            href={pdf.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            onClick={async () => {
-              if ("caches" in window) {
-                try {
-                  const cache = await caches.open("sonu-sir-pdfs-v1");
-                  await cache.add(pdf.pdfUrl);
-                } catch {
-                  // Silently fail if caching not possible
-                }
-              }
-            }}
-          >
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-3 text-xs text-primary border-primary/40 hover:bg-primary hover:text-primary-foreground shrink-0"
-              data-ocid={`pdf.download_button.${i + 1}`}
-            >
-              <Download className="w-3 h-3 mr-1.5" />
-              Download
-            </Button>
-          </a>
-        </div>
-      ))}
-    </div>
+        )}
+
+        {/* Admin-uploaded PDFs */}
+        {pdfs && pdfs.length > 0 && (
+          <div>
+            {eVidyarthiMaterials.length > 0 && (
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  📁 Teacher ke PDFs
+                </span>
+              </div>
+            )}
+            <div className="space-y-2">
+              {pdfs.map((pdf, i) => (
+                <div
+                  key={`${pdf.chapterName}-${i}`}
+                  className="flex items-center justify-between gap-3 py-2.5 px-4 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors"
+                  data-ocid={`pdf.item.${eVidyarthiMaterials.length + i + 1}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {pdf.chapterName}
+                    </span>
+                  </div>
+                  <a
+                    href={pdf.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    onClick={async () => {
+                      if ("caches" in window) {
+                        try {
+                          const cache = await caches.open("sonu-sir-pdfs-v1");
+                          await cache.add(pdf.pdfUrl);
+                        } catch {
+                          // Silently fail if caching not possible
+                        }
+                      }
+                    }}
+                  >
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-3 text-xs text-primary border-primary/40 hover:bg-primary hover:text-primary-foreground shrink-0"
+                      data-ocid={`pdf.download_button.${i + 1}`}
+                    >
+                      <Download className="w-3 h-3 mr-1.5" />
+                      Download
+                    </Button>
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!hasContent && !isLoading && (
+          <div className="py-8 text-center" data-ocid="pdf.empty_state">
+            <FileText className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              {className} ke liye abhi koi PDF nahi hai.
+            </p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              Jald hi add kiye jaayenge!
+            </p>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -200,8 +270,11 @@ function SubjectDetailView({
       <div className="form-card overflow-hidden">
         <div className="form-header-stripe" />
         <div className="p-5">
-          <p className="text-sm text-muted-foreground mb-4">
-            Class chunein aur PDF notes download karein:
+          <p className="text-sm text-muted-foreground mb-1">
+            Bihar Board ke sabhi notes aur PDFs – App ke andar hi padhein!
+          </p>
+          <p className="text-xs text-emerald-600 font-medium mb-4">
+            📚 eVidyarthi ke saath powered
           </p>
           <Tabs defaultValue={CLASSES[0]}>
             <TabsList className="flex flex-wrap h-auto gap-1.5 bg-secondary/60 p-1.5 rounded-xl mb-5">
@@ -247,12 +320,16 @@ export default function SubjectPDFSection() {
             Study Material
           </p>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-3">
-            PDF Download Section
+            Study Materials – Bihar Board (eVidyarthi)
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-base">
-            Subject aur class chunein, phir chapter-wise PDF notes download
-            karein.
+            Bihar Board ke sabhi subjects ke notes aur PDFs – Class 6 se 11 tak.
+            App ke andar hi padhein!
           </p>
+          <div className="mt-3 inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+            <span>📚</span>
+            <span>eVidyarthi ke saath powered – Bilkul FREE</span>
+          </div>
         </motion.div>
 
         {selectedSubject ? (
@@ -324,17 +401,9 @@ export default function SubjectPDFSection() {
           className="mt-8 text-center"
         >
           <p className="text-muted-foreground text-sm">
-            💡 Naye PDFs regularly add kiye jaate hain. Course le lein aur
-            hamesha updated rahein!
+            💡 Naye PDFs aur notes regularly add kiye jaate hain. Ab sabhi Bihar
+            Board materials bilkul free mein padhein!
           </p>
-          <a href="#payment" className="mt-4 inline-block">
-            <Button
-              className="bg-primary text-primary-foreground hover:opacity-90 font-semibold mt-3 px-8 shadow-blue-soft"
-              data-ocid="pdf.primary_button"
-            >
-              Sirf ₹25 Mein Sabhi PDFs Paaein →
-            </Button>
-          </a>
         </motion.div>
       </div>
     </section>
