@@ -24,6 +24,7 @@ actor {
     subject : Text;
     chapterName : Text;
     pdfUrl : Text;
+    className : Text;
   };
 
   let registrations = Map.empty<Nat, StudentRegistration>();
@@ -56,11 +57,12 @@ actor {
     (allRegistrations, adminLastSeen);
   };
 
-  public shared ({ caller }) func addPdfChapter(subject : Text, chapterName : Text, pdfUrl : Text) : async () {
+  public shared ({ caller }) func addPdfChapter(subject : Text, chapterName : Text, pdfUrl : Text, className : Text) : async () {
     let chapter : PdfChapter = {
       subject;
       chapterName;
       pdfUrl;
+      className;
     };
     chapters.add(nextChapterId, chapter);
     nextChapterId += 1;
@@ -86,6 +88,14 @@ actor {
       }
     );
     filtered;
+  };
+
+  public query ({ caller }) func getChaptersBySubjectAndClass(subject : Text, className : Text) : async [PdfChapter] {
+    chapters.values().toArray().filter(
+      func(chapter) {
+        Text.equal(chapter.subject, subject) and Text.equal(chapter.className, className)
+      }
+    );
   };
 
   public query ({ caller }) func getAdminLastSeen() : async Int {

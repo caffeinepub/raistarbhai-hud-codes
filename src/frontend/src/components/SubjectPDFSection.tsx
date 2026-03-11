@@ -1,83 +1,196 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Download } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useActor } from "@/hooks/useActor";
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen, Download, FileText } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
-
-interface PDFEntry {
-  subject: string;
-  chapterName: string;
-  pdfUrl: string;
-}
+import { useState } from "react";
 
 const SUBJECTS = [
   {
     name: "Mathematics",
     emoji: "📐",
     color: "bg-blue-50 border-blue-200 text-blue-700",
+    accent: "border-blue-400",
   },
   {
     name: "Science",
     emoji: "🔬",
     color: "bg-green-50 border-green-200 text-green-700",
+    accent: "border-green-400",
   },
   {
     name: "English",
     emoji: "📖",
     color: "bg-purple-50 border-purple-200 text-purple-700",
+    accent: "border-purple-400",
   },
   {
     name: "Hindi",
     emoji: "✍️",
     color: "bg-orange-50 border-orange-200 text-orange-700",
+    accent: "border-orange-400",
   },
   {
     name: "Social Science",
     emoji: "🌍",
     color: "bg-yellow-50 border-yellow-200 text-yellow-700",
-  },
-  {
-    name: "Computer",
-    emoji: "💻",
-    color: "bg-pink-50 border-pink-200 text-pink-700",
+    accent: "border-yellow-400",
   },
 ];
 
-const DEFAULT_CHAPTERS = [
-  "Chapter 1 - Introduction",
-  "Chapter 2 - Core Concepts",
-  "Chapter 3 - Advanced Topics",
-  "Chapter 4 - Practice Problems",
-  "Chapter 5 - Revision Notes",
+const CLASSES = [
+  "Class 6",
+  "Class 7",
+  "Class 8",
+  "Class 9",
+  "Class 10",
+  "Class 11",
 ];
+
+function SubjectClassPDFs({
+  subject,
+  className,
+}: { subject: string; className: string }) {
+  const { actor, isFetching } = useActor();
+  const { data: pdfs, isLoading } = useQuery({
+    queryKey: ["pdfs", subject, className],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getChaptersBySubjectAndClass(subject, className);
+    },
+    enabled: !!actor && !isFetching,
+  });
+
+  if (isLoading) {
+    return (
+      <div
+        className="py-8 text-center text-muted-foreground text-sm"
+        data-ocid="pdf.loading_state"
+      >
+        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+        PDFs load ho rahi hain...
+      </div>
+    );
+  }
+
+  if (!pdfs || pdfs.length === 0) {
+    return (
+      <div className="py-8 text-center" data-ocid="pdf.empty_state">
+        <FileText className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+        <p className="text-sm text-muted-foreground">
+          {className} ke liye abhi koi PDF nahi hai.
+        </p>
+        <p className="text-xs text-muted-foreground/70 mt-1">
+          Jald hi add kiye jaayenge!
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {pdfs.map((pdf, i) => (
+        <div
+          key={`${pdf.chapterName}-${i}`}
+          className="flex items-center justify-between gap-3 py-2.5 px-4 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors"
+          data-ocid={`pdf.item.${i + 1}`}
+        >
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <BookOpen className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <span className="text-sm font-medium text-foreground truncate">
+              {pdf.chapterName}
+            </span>
+          </div>
+          <a
+            href={pdf.pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+          >
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-3 text-xs text-primary border-primary/40 hover:bg-primary hover:text-primary-foreground shrink-0"
+              data-ocid={`pdf.download_button.${i + 1}`}
+            >
+              <Download className="w-3 h-3 mr-1.5" />
+              Download
+            </Button>
+          </a>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SubjectDetailView({
+  subject,
+  onBack,
+}: { subject: (typeof SUBJECTS)[0]; onBack: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+    >
+      {/* Back button + Subject header */}
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+          data-ocid="pdf.secondary_button"
+        >
+          ← Wapas Jaayein
+        </button>
+        <div
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-semibold ${subject.color}`}
+        >
+          <span>{subject.emoji}</span>
+          <span>{subject.name}</span>
+        </div>
+      </div>
+
+      <div className="form-card overflow-hidden">
+        <div className="form-header-stripe" />
+        <div className="p-5">
+          <p className="text-sm text-muted-foreground mb-4">
+            Class chunein aur PDF notes download karein:
+          </p>
+          <Tabs defaultValue={CLASSES[0]}>
+            <TabsList className="flex flex-wrap h-auto gap-1.5 bg-secondary/60 p-1.5 rounded-xl mb-5">
+              {CLASSES.map((cls) => (
+                <TabsTrigger
+                  key={cls}
+                  value={cls}
+                  className="rounded-lg text-xs font-semibold px-3 py-1.5 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  data-ocid="pdf.tab"
+                >
+                  {cls}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {CLASSES.map((cls) => (
+              <TabsContent key={cls} value={cls}>
+                <SubjectClassPDFs subject={subject.name} className={cls} />
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function SubjectPDFSection() {
-  const [pdfs, setPdfs] = useState<PDFEntry[]>([]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("sonu_sir_pdfs");
-    if (stored) {
-      try {
-        setPdfs(JSON.parse(stored));
-      } catch {
-        setPdfs([]);
-      }
-    }
-  }, []);
-
-  const getChaptersForSubject = (subjectName: string) => {
-    const stored = pdfs.filter((p) => p.subject === subjectName);
-    if (stored.length > 0) {
-      return stored.map((p) => ({ name: p.chapterName, url: p.pdfUrl }));
-    }
-    return DEFAULT_CHAPTERS.map((ch) => ({ name: ch, url: "#" }));
-  };
+  const [selectedSubject, setSelectedSubject] = useState<
+    (typeof SUBJECTS)[0] | null
+  >(null);
 
   return (
     <section id="pdfs" className="bg-secondary/40 py-16 md:py-20">
@@ -96,90 +209,71 @@ export default function SubjectPDFSection() {
             PDF Download Section
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-base">
-            Har subject ke chapter-wise PDF notes download karein. Sirf ₹25 mein
-            sabhi subjects ka access!
+            Subject aur class chunein, phir chapter-wise PDF notes download
+            karein.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {SUBJECTS.map((subject, idx) => {
-            const chapters = getChaptersForSubject(subject.name);
-            return (
+        {selectedSubject ? (
+          <SubjectDetailView
+            subject={selectedSubject}
+            onBack={() => setSelectedSubject(null)}
+          />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {SUBJECTS.map((subject, idx) => (
               <motion.div
                 key={subject.name}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.08 }}
-                className="form-card overflow-hidden"
-                data-ocid={`pdf.item.${idx + 1}`}
+                transition={{ duration: 0.4, delay: idx * 0.07 }}
               >
-                <div className="form-header-stripe" />
-                <div className="p-5">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className={`w-11 h-11 rounded-xl border flex items-center justify-center text-xl ${subject.color}`}
-                    >
-                      {subject.emoji}
+                <button
+                  type="button"
+                  className={`w-full text-left form-card overflow-hidden hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-l-4 ${subject.accent}`}
+                  onClick={() => setSelectedSubject(subject)}
+                  data-ocid={`pdf.item.${idx + 1}`}
+                >
+                  <div className="form-header-stripe" />
+                  <div className="p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div
+                        className={`w-12 h-12 rounded-xl border flex items-center justify-center text-2xl ${subject.color}`}
+                      >
+                        {subject.emoji}
+                      </div>
+                      <div>
+                        <h3 className="font-display font-bold text-foreground">
+                          {subject.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Class 6 – 11
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-display font-bold text-foreground">
-                        {subject.name}
-                      </h3>
-                      <Badge variant="secondary" className="text-xs mt-0.5">
-                        {chapters.length} Chapters
-                      </Badge>
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-1 flex-wrap">
+                        {["6", "7", "8", "9", "10", "11"].map((cls) => (
+                          <Badge
+                            key={cls}
+                            variant="secondary"
+                            className="text-[10px] px-1.5 py-0"
+                          >
+                            {cls}
+                          </Badge>
+                        ))}
+                      </div>
+                      <span className="text-xs text-primary font-semibold">
+                        Dekhein →
+                      </span>
                     </div>
                   </div>
-
-                  <Accordion type="single" collapsible>
-                    <AccordionItem value="chapters" className="border-none">
-                      <AccordionTrigger
-                        className="py-2 text-sm font-medium text-primary hover:no-underline"
-                        data-ocid={`pdf.toggle.${idx + 1}`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <BookOpen className="w-4 h-4" />
-                          Chapters Dekhein
-                        </span>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-2 pt-1">
-                          {chapters.map((chapter, ci) => (
-                            <div
-                              key={`${subject.name}-${ci}`}
-                              className="flex items-center justify-between gap-2 py-1.5 px-3 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors"
-                            >
-                              <span className="text-sm text-foreground truncate flex-1">
-                                {chapter.name}
-                              </span>
-                              <a
-                                href={chapter.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download
-                              >
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 px-2.5 text-xs text-primary border-primary hover:bg-primary hover:text-primary-foreground shrink-0"
-                                  data-ocid={`pdf.download_button.${ci + 1}`}
-                                >
-                                  <Download className="w-3 h-3 mr-1" />
-                                  Download
-                                </Button>
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                </div>
+                </button>
               </motion.div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}

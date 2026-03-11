@@ -11,6 +11,7 @@ import { IDL } from '@icp-sdk/core/candid';
 export const PdfChapter = IDL.Record({
   'subject' : IDL.Text,
   'pdfUrl' : IDL.Text,
+  'className' : IDL.Text,
   'chapterName' : IDL.Text,
 });
 export const HudLayout = IDL.Record({
@@ -28,7 +29,7 @@ export const StudentRegistration = IDL.Record({
 });
 
 export const idlService = IDL.Service({
-  'addPdfChapter' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+  'addPdfChapter' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
   'deletePdfChapter' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'getAdminLastSeen' : IDL.Func([], [IDL.Int], ['query']),
   'getAllChapters' : IDL.Func([], [IDL.Vec(PdfChapter)], ['query']),
@@ -40,6 +41,11 @@ export const idlService = IDL.Service({
     ),
   'getChaptersBySubject' : IDL.Func(
       [IDL.Text],
+      [IDL.Vec(PdfChapter)],
+      ['query'],
+    ),
+  'getChaptersBySubjectAndClass' : IDL.Func(
+      [IDL.Text, IDL.Text],
       [IDL.Vec(PdfChapter)],
       ['query'],
     ),
@@ -58,6 +64,7 @@ export const idlFactory = ({ IDL }) => {
   const PdfChapter = IDL.Record({
     'subject' : IDL.Text,
     'pdfUrl' : IDL.Text,
+    'className' : IDL.Text,
     'chapterName' : IDL.Text,
   });
   const HudLayout = IDL.Record({
@@ -75,7 +82,11 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
-    'addPdfChapter' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+    'addPdfChapter' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
     'deletePdfChapter' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'getAdminLastSeen' : IDL.Func([], [IDL.Int], ['query']),
     'getAllChapters' : IDL.Func([], [IDL.Vec(PdfChapter)], ['query']),
@@ -87,6 +98,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getChaptersBySubject' : IDL.Func(
         [IDL.Text],
+        [IDL.Vec(PdfChapter)],
+        ['query'],
+      ),
+    'getChaptersBySubjectAndClass' : IDL.Func(
+        [IDL.Text, IDL.Text],
         [IDL.Vec(PdfChapter)],
         ['query'],
       ),

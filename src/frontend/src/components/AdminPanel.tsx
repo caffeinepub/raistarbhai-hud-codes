@@ -20,15 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useActor } from "@/hooks/useActor";
-import {
-  Bell,
-  GraduationCap,
-  Loader2,
-  Lock,
-  LogOut,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Bell, GraduationCap, Loader2, Lock, LogOut, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -40,7 +32,15 @@ const SUBJECTS = [
   "English",
   "Hindi",
   "Social Science",
-  "Computer",
+];
+
+const CLASSES = [
+  "Class 6",
+  "Class 7",
+  "Class 8",
+  "Class 9",
+  "Class 10",
+  "Class 11",
 ];
 
 interface Registration {
@@ -52,11 +52,11 @@ interface Registration {
   registeredAt: bigint;
 }
 
-interface PDFEntry {
+interface PdfChapter {
   subject: string;
   chapterName: string;
   pdfUrl: string;
-  id: string;
+  className: string;
 }
 
 export default function AdminPanel() {
@@ -64,7 +64,6 @@ export default function AdminPanel() {
   const [password, setPassword] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [passwordError, setPasswordError] = useState("");
-  const [pdfRefresh, setPdfRefresh] = useState(0);
 
   // Registrations state
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -72,10 +71,14 @@ export default function AdminPanel() {
   const [isLoadingRegs, setIsLoadingRegs] = useState(false);
   const [regError, setRegError] = useState("");
 
-  // PDF form state
+  // PDF state
   const [pdfSubject, setPdfSubject] = useState("");
+  const [pdfClass, setPdfClass] = useState("");
   const [pdfChapter, setPdfChapter] = useState("");
   const [pdfUrl, setPdfUrl] = useState("");
+  const [isAddingPdf, setIsAddingPdf] = useState(false);
+  const [pdfEntries, setPdfEntries] = useState<PdfChapter[]>([]);
+  const [isLoadingPdfs, setIsLoadingPdfs] = useState(false);
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
@@ -113,17 +116,30 @@ export default function AdminPanel() {
     }
   }, [actor]);
 
+  const fetchPdfs = useCallback(async () => {
+    if (!actor) return;
+    setIsLoadingPdfs(true);
+    try {
+      const chapters = await actor.getAllChapters();
+      setPdfEntries(chapters as PdfChapter[]);
+    } catch (err) {
+      console.error("Failed to fetch PDFs:", err);
+    } finally {
+      setIsLoadingPdfs(false);
+    }
+  }, [actor]);
+
   useEffect(() => {
     if (isLoggedIn) {
       fetchRegistrations();
+      fetchPdfs();
     }
-  }, [isLoggedIn, fetchRegistrations]);
+  }, [isLoggedIn, fetchRegistrations, fetchPdfs]);
 
   const handleRegistrationsTabOpen = async () => {
     if (!actor) return;
     try {
       await actor.setAdminLastSeen();
-      // Update local adminLastSeen so badge disappears immediately
       const now = BigInt(Date.now()) * BigInt(1_000_000);
       setAdminLastSeen(now);
     } catch (err) {
@@ -135,47 +151,34 @@ export default function AdminPanel() {
     (r) => r.registeredAt > adminLastSeen,
   ).length;
 
-  const getPDFs = (): PDFEntry[] => {
-    try {
-      const raw = JSON.parse(localStorage.getItem("sonu_sir_pdfs") || "[]");
-      return raw.map((p: PDFEntry, i: number) => ({
-        ...p,
-        id: p.id || `${p.subject}-${p.chapterName}-${i}`,
-      }));
-    } catch {
-      return [];
-    }
-  };
-
-  const handleAddPDF = () => {
-    if (!pdfSubject || !pdfChapter.trim() || !pdfUrl.trim()) {
+  const handleAddPDF = async () => {
+    if (!pdfSubject || !pdfClass || !pdfChapter.trim() || !pdfUrl.trim()) {
       toast.error("Sabhi fields fill karein");
       return;
     }
-    const existing = getPDFs();
-    const newEntry: PDFEntry = {
-      subject: pdfSubject,
-      chapterName: pdfChapter.trim(),
-      pdfUrl: pdfUrl.trim(),
-      id: `${pdfSubject}-${Date.now()}`,
-    };
-    existing.push(newEntry);
-    localStorage.setItem("sonu_sir_pdfs", JSON.stringify(existing));
-    toast.success("PDF chapter add ho gaya!");
-    setPdfChapter("");
-    setPdfUrl("");
-    setPdfRefresh((v) => v + 1);
+    if (!actor) {
+      toast.error("Backend se connect nahi ho pa raha.");
+      return;
+    }
+    setIsAddingPdf(true);
+    try {
+      await actor.addPdfChapter(
+        pdfSubject,
+        pdfChapter.trim(),
+        pdfUrl.trim(),
+        pdfClass,
+      );
+      toast.success("PDF chapter add ho gaya!");
+      setPdfChapter("");
+      setPdfUrl("");
+      await fetchPdfs();
+    } catch (err) {
+      console.error("Failed to add PDF:", err);
+      toast.error("PDF add karne mein dikkat aayi.");
+    } finally {
+      setIsAddingPdf(false);
+    }
   };
-
-  const handleDeletePDF = (id: string) => {
-    const existing = getPDFs().filter((p) => p.id !== id);
-    localStorage.setItem("sonu_sir_pdfs", JSON.stringify(existing));
-    toast.success("PDF delete ho gaya");
-    setPdfRefresh((v) => v + 1);
-  };
-
-  const pdfEntries = getPDFs();
-  void pdfRefresh;
 
   if (!isLoggedIn) {
     return (
@@ -481,6 +484,23 @@ export default function AdminPanel() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Class</Label>
+                      <Select value={pdfClass} onValueChange={setPdfClass}>
+                        <SelectTrigger data-ocid="admin.select">
+                          <SelectValue placeholder="Class chunein..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CLASSES.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">
                         Chapter Name
@@ -492,6 +512,7 @@ export default function AdminPanel() {
                         data-ocid="admin.input"
                       />
                     </div>
+
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">
                         PDF URL / Link
@@ -503,12 +524,18 @@ export default function AdminPanel() {
                         data-ocid="admin.input"
                       />
                     </div>
+
                     <Button
                       onClick={handleAddPDF}
+                      disabled={isAddingPdf}
                       className="w-full bg-primary text-primary-foreground hover:opacity-90 font-semibold"
                       data-ocid="admin.submit_button"
                     >
-                      <Plus className="w-4 h-4 mr-2" />
+                      {isAddingPdf ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4 mr-2" />
+                      )}
                       PDF Add Karein
                     </Button>
                   </div>
@@ -519,12 +546,36 @@ export default function AdminPanel() {
               <div className="form-card overflow-hidden">
                 <div className="form-header-stripe" />
                 <div className="p-6">
-                  <h2 className="font-display font-bold text-lg text-foreground mb-4">
-                    Saved PDFs ({pdfEntries.length})
-                  </h2>
-                  {pdfEntries.length === 0 ? (
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-display font-bold text-lg text-foreground">
+                      Saved PDFs ({pdfEntries.length})
+                    </h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={fetchPdfs}
+                      disabled={isLoadingPdfs}
+                      data-ocid="admin.secondary_button"
+                    >
+                      {isLoadingPdfs ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        "Refresh"
+                      )}
+                    </Button>
+                  </div>
+
+                  {isLoadingPdfs ? (
                     <div
-                      className="text-center py-12 text-muted-foreground"
+                      className="text-center py-10 text-muted-foreground"
+                      data-ocid="admin.loading_state"
+                    >
+                      <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-primary" />
+                      <p className="text-sm">PDFs load ho rahi hain...</p>
+                    </div>
+                  ) : pdfEntries.length === 0 ? (
+                    <div
+                      className="text-center py-10 text-muted-foreground"
                       data-ocid="admin.empty_state"
                     >
                       <p className="text-sm">
@@ -532,37 +583,38 @@ export default function AdminPanel() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2" data-ocid="admin.list">
+                    <div
+                      className="space-y-2 max-h-96 overflow-y-auto"
+                      data-ocid="admin.list"
+                    >
                       {pdfEntries.map((pdf, i) => (
                         <div
-                          key={pdf.id}
-                          className="flex items-start gap-3 p-3 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors"
+                          key={`${pdf.subject}-${pdf.className}-${pdf.chapterName}-${i}`}
+                          className="p-3 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors"
                           data-ocid={`admin.item.${i + 1}`}
                         >
-                          <div className="flex-1 min-w-0">
-                            <Badge variant="outline" className="text-xs mb-1">
+                          <div className="flex gap-2 mb-1 flex-wrap">
+                            <Badge variant="outline" className="text-xs">
                               {pdf.subject}
                             </Badge>
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {pdf.chapterName}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {pdf.pdfUrl}
-                            </p>
+                            <Badge className="text-xs bg-primary/10 text-primary border-0">
+                              {pdf.className}
+                            </Badge>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeletePDF(pdf.id)}
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                            data-ocid={`admin.delete_button.${i + 1}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {pdf.chapterName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {pdf.pdfUrl}
+                          </p>
                         </div>
                       ))}
                     </div>
                   )}
+
+                  <p className="text-xs text-muted-foreground mt-4 border-t border-border pt-3">
+                    ℹ️ PDF delete karne ke liye admin se contact karein.
+                  </p>
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, Settings, X } from "lucide-react";
 import { useState } from "react";
 
 const navLinks = [
@@ -13,6 +13,11 @@ const navLinks = [
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const goToAdmin = () => {
+    window.location.hash = "#admin";
+    setMenuOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-xs">
@@ -59,18 +64,43 @@ export default function Navbar() {
               Register Now
             </Button>
           </a>
+          {/* Admin button - subtle icon only on desktop */}
+          <button
+            type="button"
+            onClick={goToAdmin}
+            title="Admin Panel"
+            className="ml-1 p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
+            data-ocid="nav.admin_button"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
         </nav>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          type="button"
-          className="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-label="Toggle menu"
-          data-ocid="nav.toggle"
-        >
-          {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        {/* Mobile: Admin icon + Menu toggle */}
+        <div className="flex items-center gap-1 md:hidden">
+          <button
+            type="button"
+            onClick={goToAdmin}
+            title="Admin Panel"
+            className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary transition-colors"
+            data-ocid="nav.admin_button"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            className="p-2 rounded-lg hover:bg-secondary transition-colors"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Toggle menu"
+            data-ocid="nav.toggle"
+          >
+            {menuOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
