@@ -17,8 +17,8 @@ const contactItems = [
   {
     icon: MapPin,
     title: "Location",
-    value: "Sonu Sir Class",
-    sub: "Near Main Market, Aapka Shehar",
+    value: "Bihar, India",
+    sub: "Sonu Sir Class — Aapke Shehar Mein",
     color: "text-blue-600",
     bg: "bg-blue-50",
     border: "border-blue-100",

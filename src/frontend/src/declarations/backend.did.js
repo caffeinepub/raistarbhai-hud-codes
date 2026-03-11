@@ -8,29 +8,95 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const PdfChapter = IDL.Record({
+  'subject' : IDL.Text,
+  'pdfUrl' : IDL.Text,
+  'chapterName' : IDL.Text,
+});
 export const HudLayout = IDL.Record({
   'code' : IDL.Text,
   'name' : IDL.Text,
   'description' : IDL.Text,
 });
+export const StudentRegistration = IDL.Record({
+  'studentName' : IDL.Text,
+  'subject' : IDL.Text,
+  'mobile' : IDL.Text,
+  'registeredAt' : IDL.Int,
+  'className' : IDL.Text,
+  'parentName' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
+  'addPdfChapter' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+  'deletePdfChapter' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+  'getAdminLastSeen' : IDL.Func([], [IDL.Int], ['query']),
+  'getAllChapters' : IDL.Func([], [IDL.Vec(PdfChapter)], ['query']),
   'getAllHudCodes' : IDL.Func([], [IDL.Vec(HudLayout)], ['query']),
+  'getAllRegistrations' : IDL.Func(
+      [],
+      [IDL.Vec(StudentRegistration), IDL.Int],
+      ['query'],
+    ),
+  'getChaptersBySubject' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(PdfChapter)],
+      ['query'],
+    ),
   'getHudCodeByName' : IDL.Func([IDL.Text], [HudLayout], ['query']),
+  'registerStudent' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
+  'setAdminLastSeen' : IDL.Func([], [], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const PdfChapter = IDL.Record({
+    'subject' : IDL.Text,
+    'pdfUrl' : IDL.Text,
+    'chapterName' : IDL.Text,
+  });
   const HudLayout = IDL.Record({
     'code' : IDL.Text,
     'name' : IDL.Text,
     'description' : IDL.Text,
   });
+  const StudentRegistration = IDL.Record({
+    'studentName' : IDL.Text,
+    'subject' : IDL.Text,
+    'mobile' : IDL.Text,
+    'registeredAt' : IDL.Int,
+    'className' : IDL.Text,
+    'parentName' : IDL.Text,
+  });
   
   return IDL.Service({
+    'addPdfChapter' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+    'deletePdfChapter' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+    'getAdminLastSeen' : IDL.Func([], [IDL.Int], ['query']),
+    'getAllChapters' : IDL.Func([], [IDL.Vec(PdfChapter)], ['query']),
     'getAllHudCodes' : IDL.Func([], [IDL.Vec(HudLayout)], ['query']),
+    'getAllRegistrations' : IDL.Func(
+        [],
+        [IDL.Vec(StudentRegistration), IDL.Int],
+        ['query'],
+      ),
+    'getChaptersBySubject' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(PdfChapter)],
+        ['query'],
+      ),
     'getHudCodeByName' : IDL.Func([IDL.Text], [HudLayout], ['query']),
+    'registerStudent' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
+    'setAdminLastSeen' : IDL.Func([], [], []),
   });
 };
 

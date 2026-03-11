@@ -15,9 +15,33 @@ export interface HudLayout {
   'name' : string,
   'description' : string,
 }
+export interface PdfChapter {
+  'subject' : string,
+  'pdfUrl' : string,
+  'chapterName' : string,
+}
+export interface StudentRegistration {
+  'studentName' : string,
+  'subject' : string,
+  'mobile' : string,
+  'registeredAt' : bigint,
+  'className' : string,
+  'parentName' : string,
+}
 export interface _SERVICE {
+  'addPdfChapter' : ActorMethod<[string, string, string], undefined>,
+  'deletePdfChapter' : ActorMethod<[bigint], boolean>,
+  'getAdminLastSeen' : ActorMethod<[], bigint>,
+  'getAllChapters' : ActorMethod<[], Array<PdfChapter>>,
   'getAllHudCodes' : ActorMethod<[], Array<HudLayout>>,
+  'getAllRegistrations' : ActorMethod<[], [Array<StudentRegistration>, bigint]>,
+  'getChaptersBySubject' : ActorMethod<[string], Array<PdfChapter>>,
   'getHudCodeByName' : ActorMethod<[string], HudLayout>,
+  'registerStudent' : ActorMethod<
+    [string, string, string, string, string],
+    undefined
+  >,
+  'setAdminLastSeen' : ActorMethod<[], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

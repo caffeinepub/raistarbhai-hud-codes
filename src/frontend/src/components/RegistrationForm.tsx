@@ -8,18 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useActor } from "@/hooks/useActor";
 import { CheckCircle2, GraduationCap, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-
-interface RegistrationData {
-  studentName: string;
-  className: string;
-  subject: string;
-  mobile: string;
-  parentName: string;
-  registeredAt: string;
-}
 
 const CLASSES = [
   "Class 1",
@@ -47,6 +39,7 @@ const SUBJECTS = [
 ];
 
 export default function RegistrationForm() {
+  const { actor } = useActor();
   const [formData, setFormData] = useState({
     studentName: "",
     className: "",
@@ -57,6 +50,7 @@ export default function RegistrationForm() {
   const [errors, setErrors] = useState<Partial<typeof formData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const validate = () => {
     const newErrors: Partial<typeof formData> = {};
@@ -85,28 +79,30 @@ export default function RegistrationForm() {
       return;
     }
     setErrors({});
+    setSubmitError("");
     setIsSubmitting(true);
 
-    // Simulate async save
-    await new Promise((res) => setTimeout(res, 800));
-
-    // Save to localStorage
-    const existing: RegistrationData[] = JSON.parse(
-      localStorage.getItem("sonu_sir_registrations") || "[]",
-    );
-    const newEntry: RegistrationData = {
-      ...formData,
-      registeredAt: new Date().toISOString(),
-    };
-    existing.push(newEntry);
-    localStorage.setItem("sonu_sir_registrations", JSON.stringify(existing));
-
-    setIsSubmitting(false);
-    setIsSuccess(true);
+    try {
+      if (!actor) throw new Error("Actor not ready");
+      await actor.registerStudent(
+        formData.studentName,
+        formData.className,
+        formData.subject,
+        formData.mobile,
+        formData.parentName,
+      );
+      setIsSuccess(true);
+    } catch (err) {
+      console.error("Registration failed:", err);
+      setSubmitError("Registration nahi ho payi. Dobara try karein.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
     setIsSuccess(false);
+    setSubmitError("");
     setFormData({
       studentName: "",
       className: "",
@@ -208,6 +204,15 @@ export default function RegistrationForm() {
                 className="px-6 py-6 space-y-5"
                 noValidate
               >
+                {submitError && (
+                  <div
+                    className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive"
+                    data-ocid="form.error_state"
+                  >
+                    {submitError}
+                  </div>
+                )}
+
                 {/* Student Name */}
                 <div className="space-y-1.5">
                   <Label

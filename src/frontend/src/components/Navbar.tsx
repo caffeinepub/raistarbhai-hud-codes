@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const navLinks = [
   { label: "Home", href: "#home" },
   { label: "Subjects", href: "#subjects" },
+  { label: "PDFs", href: "#pdfs" },
   { label: "Features", href: "#features" },
   { label: "Admission", href: "#register" },
   { label: "Contact", href: "#contact" },
@@ -22,9 +23,11 @@ export default function Navbar() {
           className="flex items-center gap-2.5 group"
           data-ocid="nav.link"
         >
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center shadow-blue-soft">
-            <GraduationCap className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img
+            src="/assets/uploads/Screenshot_20260310-195245-1.jpg"
+            alt="Sonu Sir Class Logo"
+            className="w-10 h-10 rounded-full object-cover shadow-sm border border-border"
+          />
           <div>
             <span className="font-display font-bold text-lg text-foreground leading-none block">
               Sonu Sir Class

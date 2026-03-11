@@ -11,9 +11,11 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Brand */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <GraduationCap className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img
+              src="/assets/uploads/Screenshot_20260310-195245-1.jpg"
+              alt="Sonu Sir Class"
+              className="w-8 h-8 rounded-full object-cover border border-border"
+            />
             <div>
               <span className="font-display font-bold text-foreground">
                 Sonu Sir Class
@@ -29,6 +31,7 @@ export default function Footer() {
             {[
               { label: "Home", href: "#home" },
               { label: "Subjects", href: "#subjects" },
+              { label: "PDFs", href: "#pdfs" },
               { label: "Features", href: "#features" },
               { label: "Admission", href: "#register" },
               { label: "Contact", href: "#contact" },
@@ -42,6 +45,13 @@ export default function Footer() {
                 {link.label}
               </a>
             ))}
+            <a
+              href="#admin"
+              className="hover:text-foreground transition-colors opacity-30 hover:opacity-60 text-xs"
+              data-ocid="nav.link"
+            >
+              Admin
+            </a>
           </nav>
 
           {/* Attribution */}
@@ -60,7 +70,7 @@ export default function Footer() {
 
         <div className="mt-6 pt-6 border-t border-border text-center text-xs text-muted-foreground">
           Sonu Sir Class — Ghar Baithe Padho, Safalta Pao. Class 1–12 ke liye
-          best coaching center.
+          best coaching center. Bihar, India.
         </div>
       </div>
     </footer>

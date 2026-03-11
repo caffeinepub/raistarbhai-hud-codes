@@ -1,7 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Award, BookOpen, Star, Users } from "lucide-react";
-import { motion } from "motion/react";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { Award, BookOpen, Download, Share2, Star, Users } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
 
 const stats = [
   { icon: Users, value: "500+", label: "Students" },
@@ -11,6 +13,20 @@ const stats = [
 ];
 
 export default function HeroSection() {
+  const { isInstallable, isInstalled, isIOS, triggerInstall } = usePWAInstall();
+  const [showIOSHint, setShowIOSHint] = useState(false);
+
+  const handleInstallClick = async () => {
+    if (isIOS) {
+      setShowIOSHint(true);
+      setTimeout(() => setShowIOSHint(false), 5000);
+      return;
+    }
+    await triggerInstall();
+  };
+
+  const showInstallButton = !isInstalled && (isInstallable || isIOS);
+
   return (
     <section id="home" className="relative overflow-hidden bg-white">
       {/* Background dot pattern */}
@@ -66,7 +82,40 @@ export default function HeroSection() {
                   Subjects Dekhein
                 </Button>
               </a>
+
+              {/* PWA Install Button */}
+              {showInstallButton && (
+                <Button
+                  size="lg"
+                  onClick={handleInstallClick}
+                  className="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 gap-2 shadow-md"
+                  data-ocid="hero.install_button"
+                >
+                  {isIOS ? (
+                    <Share2 className="h-5 w-5" />
+                  ) : (
+                    <Download className="h-5 w-5" />
+                  )}
+                  Install App
+                </Button>
+              )}
             </div>
+
+            {/* iOS hint tooltip */}
+            <AnimatePresence>
+              {showIOSHint && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  className="mt-3 inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm text-primary font-medium"
+                  data-ocid="hero.install_ios_hint"
+                >
+                  <Share2 className="h-4 w-4 flex-shrink-0" />
+                  Share button tap karo → "Add to Home Screen" select karo
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           {/* Right: Preview card */}
@@ -81,11 +130,11 @@ export default function HeroSection() {
               <div className="form-card p-8 relative overflow-hidden">
                 <div className="form-header-stripe absolute top-0 left-0 right-0" />
                 <div className="pt-2 text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center shadow-blue-soft">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden border-2 border-primary/20 shadow-blue-soft">
                     <img
-                      src="/assets/generated/sonu-sir-logo-transparent.dim_200x200.png"
+                      src="/assets/uploads/Screenshot_20260310-195245-1.jpg"
                       alt="Sonu Sir Class"
-                      className="w-14 h-14 object-contain"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <h2 className="font-display font-bold text-xl text-foreground mb-1">

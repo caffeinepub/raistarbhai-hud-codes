@@ -89,17 +89,94 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface StudentRegistration {
+    studentName: string;
+    subject: string;
+    mobile: string;
+    registeredAt: bigint;
+    className: string;
+    parentName: string;
+}
+export interface PdfChapter {
+    subject: string;
+    pdfUrl: string;
+    chapterName: string;
+}
 export interface HudLayout {
     code: string;
     name: string;
     description: string;
 }
 export interface backendInterface {
+    addPdfChapter(subject: string, chapterName: string, pdfUrl: string): Promise<void>;
+    deletePdfChapter(chapterId: bigint): Promise<boolean>;
+    getAdminLastSeen(): Promise<bigint>;
+    getAllChapters(): Promise<Array<PdfChapter>>;
     getAllHudCodes(): Promise<Array<HudLayout>>;
+    getAllRegistrations(): Promise<[Array<StudentRegistration>, bigint]>;
+    getChaptersBySubject(subject: string): Promise<Array<PdfChapter>>;
     getHudCodeByName(name: string): Promise<HudLayout>;
+    registerStudent(studentName: string, className: string, subject: string, mobile: string, parentName: string): Promise<void>;
+    setAdminLastSeen(): Promise<void>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
+    async addPdfChapter(arg0: string, arg1: string, arg2: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addPdfChapter(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addPdfChapter(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async deletePdfChapter(arg0: bigint): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deletePdfChapter(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deletePdfChapter(arg0);
+            return result;
+        }
+    }
+    async getAdminLastSeen(): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAdminLastSeen();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAdminLastSeen();
+            return result;
+        }
+    }
+    async getAllChapters(): Promise<Array<PdfChapter>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllChapters();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllChapters();
+            return result;
+        }
+    }
     async getAllHudCodes(): Promise<Array<HudLayout>> {
         if (this.processError) {
             try {
@@ -114,6 +191,40 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAllRegistrations(): Promise<[Array<StudentRegistration>, bigint]> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllRegistrations();
+                return [
+                    result[0],
+                    result[1]
+                ];
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllRegistrations();
+            return [
+                result[0],
+                result[1]
+            ];
+        }
+    }
+    async getChaptersBySubject(arg0: string): Promise<Array<PdfChapter>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getChaptersBySubject(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getChaptersBySubject(arg0);
+            return result;
+        }
+    }
     async getHudCodeByName(arg0: string): Promise<HudLayout> {
         if (this.processError) {
             try {
@@ -125,6 +236,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getHudCodeByName(arg0);
+            return result;
+        }
+    }
+    async registerStudent(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.registerStudent(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.registerStudent(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async setAdminLastSeen(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setAdminLastSeen();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setAdminLastSeen();
             return result;
         }
     }
