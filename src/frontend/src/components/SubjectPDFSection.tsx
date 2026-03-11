@@ -5,7 +5,7 @@ import { useActor } from "@/hooks/useActor";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Download, FileText } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const SUBJECTS = [
   {
@@ -54,6 +54,19 @@ function SubjectClassPDFs({
   className,
 }: { subject: string; className: string }) {
   const { actor, isFetching } = useActor();
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   const { data: pdfs, isLoading } = useQuery({
     queryKey: ["pdfs", subject, className],
     queryFn: async () => {
@@ -77,20 +90,38 @@ function SubjectClassPDFs({
 
   if (!pdfs || pdfs.length === 0) {
     return (
-      <div className="py-8 text-center" data-ocid="pdf.empty_state">
-        <FileText className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground">
-          {className} ke liye abhi koi PDF nahi hai.
-        </p>
-        <p className="text-xs text-muted-foreground/70 mt-1">
-          Jald hi add kiye jaayenge!
-        </p>
-      </div>
+      <>
+        {isOffline && (
+          <div
+            className="mb-3 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2"
+            data-ocid="pdf.error_state"
+          >
+            ⚠️ Aap offline hain. Sirf pehle dekhe gaye PDFs milenge.
+          </div>
+        )}
+        <div className="py-8 text-center" data-ocid="pdf.empty_state">
+          <FileText className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">
+            {className} ke liye abhi koi PDF nahi hai.
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Jald hi add kiye jaayenge!
+          </p>
+        </div>
+      </>
     );
   }
 
   return (
     <div className="space-y-2">
+      {isOffline && (
+        <div
+          className="mb-3 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2"
+          data-ocid="pdf.error_state"
+        >
+          ⚠️ Aap offline hain. Sirf pehle dekhe gaye PDFs milenge.
+        </div>
+      )}
       {pdfs.map((pdf, i) => (
         <div
           key={`${pdf.chapterName}-${i}`}
@@ -110,6 +141,16 @@ function SubjectClassPDFs({
             target="_blank"
             rel="noopener noreferrer"
             download
+            onClick={async () => {
+              if ("caches" in window) {
+                try {
+                  const cache = await caches.open("sonu-sir-pdfs-v1");
+                  await cache.add(pdf.pdfUrl);
+                } catch {
+                  // Silently fail if caching not possible
+                }
+              }
+            }}
           >
             <Button
               size="sm"

@@ -1,35 +1,29 @@
-# Sonu Sir Class Website
+# Sonu Sir Class
 
 ## Current State
-- Subject-wise PDF section exists but is flat: Subject → Chapter → PDF
-- Admin panel allows adding PDFs with subject + chapter name + URL
-- Subjects include: Mathematics, Science, English, Hindi, Social Science, Computer
-- Backend PdfChapter model has: subject, chapterName, pdfUrl (no class field)
-- PDFs stored in localStorage (not backend)
+Full-featured PWA with manifest.json, subject/class-wise PDF section, registration form, admin panel, and navbar. No service worker or offline caching exists yet.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Class field (Class 6 to Class 11) to PDF model
-- Class selection in admin panel PDF form
-- Class-wise navigation in SubjectPDFSection (Subject → Class → PDF)
+- `public/sw.js`: Service Worker that caches app shell on install and caches PDF URLs as they are opened (cache-then-network for PDFs, network-first for API calls, cache-first for static assets)
+- Service worker registration in `main.tsx`
+- Offline fallback UI state in SubjectPDFSection when network is unavailable
 
 ### Modify
-- PDF structure: Subject → Class → PDF (was Subject → Chapter → PDF)
-- Backend PdfChapter: add `className` field
-- SubjectPDFSection: show class selector after subject selection
-- AdminPanel: add class dropdown in PDF add form, show class in PDF list
-- Remove "Computer" from subjects list in both SubjectPDFSection and AdminPanel
+- `main.tsx`: Register service worker after mount
+- `SubjectPDFSection.tsx`: When PDF download is clicked, store PDF URL in a dedicated `pdf-cache` so it's accessible offline
 
 ### Remove
-- Computer subject from all subject lists
-- Default/placeholder chapters (show empty state if no PDFs)
+- Nothing
 
 ## Implementation Plan
-1. Update backend PdfChapter type to include `className` field
-2. Update addPdfChapter function to accept className
-3. Update getChaptersBySubject to also filter by class
-4. Add new query: getChaptersBySubjectAndClass
-5. Update SubjectPDFSection: Subject cards → click → class tabs (6-11) → PDF list
-6. Update AdminPanel: add class Select in PDF form, display class in PDF list
-7. Remove Computer from all subject arrays
+1. Write `public/sw.js` with:
+   - `CACHE_NAME` for app shell
+   - `PDF_CACHE_NAME` for PDF files
+   - `install` event: pre-cache app shell assets
+   - `activate` event: delete old caches
+   - `fetch` event: cache-first for static assets, cache-then-network for same-origin requests, passthrough for cross-origin non-PDF
+   - Cache PDF fetch responses in `pdf-cache` when URL ends in `.pdf` or originates from PDF links
+2. Register SW in `main.tsx` using `navigator.serviceWorker.register('/sw.js')`
+3. In `SubjectPDFSection.tsx`, when student clicks Download, use `caches.open('pdf-cache')` to manually cache the PDF URL so it's available offline next time

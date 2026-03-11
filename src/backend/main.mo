@@ -4,12 +4,12 @@ import Text "mo:core/Text";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Map "mo:core/Map";
-import Migration "migration";
+
 import Nat "mo:core/Nat";
 import Int "mo:core/Int";
 import Array "mo:core/Array";
 
-(with migration = Migration.run)
+
 actor {
   type StudentRegistration = {
     studentName : Text;
