@@ -32,13 +32,13 @@ actor {
   };
 
   // Stable storage so data survives canister upgrades
-  var stableRegistrations : [(Nat, StudentRegistration)] = [];
-  var stableChapters : [(Nat, PdfChapter)] = [];
-  var stableNotices : [(Nat, Notice)] = [];
-  var stableNextId : Nat = 0;
-  var stableNextChapterId : Nat = 0;
-  var stableNextNoticeId : Nat = 0;
-  var adminLastSeen : Int = 0;
+  stable var stableRegistrations : [(Nat, StudentRegistration)] = [];
+  stable var stableChapters : [(Nat, PdfChapter)] = [];
+  stable var stableNotices : [(Nat, Notice)] = [];
+  stable var stableNextId : Nat = 0;
+  stable var stableNextChapterId : Nat = 0;
+  stable var stableNextNoticeId : Nat = 0;
+  stable var adminLastSeen : Int = 0;
 
   // In-memory maps loaded from stable storage
   let registrations = Map.fromIter<Nat, StudentRegistration>(
