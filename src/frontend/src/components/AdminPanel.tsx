@@ -20,7 +20,15 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useActor } from "@/hooks/useActor";
-import { Bell, GraduationCap, Loader2, Lock, LogOut, Plus } from "lucide-react";
+import {
+  Bell,
+  GraduationCap,
+  Loader2,
+  Lock,
+  LogOut,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -59,19 +67,23 @@ interface PdfChapter {
   className: string;
 }
 
+interface Notice {
+  id: bigint;
+  text: string;
+  createdAt: bigint;
+}
+
 export default function AdminPanel() {
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
   const [password, setPassword] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
-  // Registrations state
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [adminLastSeen, setAdminLastSeen] = useState<bigint>(BigInt(0));
   const [isLoadingRegs, setIsLoadingRegs] = useState(false);
   const [regError, setRegError] = useState("");
 
-  // PDF state
   const [pdfSubject, setPdfSubject] = useState("");
   const [pdfClass, setPdfClass] = useState("");
   const [pdfChapter, setPdfChapter] = useState("");
@@ -79,6 +91,12 @@ export default function AdminPanel() {
   const [isAddingPdf, setIsAddingPdf] = useState(false);
   const [pdfEntries, setPdfEntries] = useState<PdfChapter[]>([]);
   const [isLoadingPdfs, setIsLoadingPdfs] = useState(false);
+
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [noticeText, setNoticeText] = useState("");
+  const [isAddingNotice, setIsAddingNotice] = useState(false);
+  const [isDeletingNotice, setIsDeletingNotice] = useState<bigint | null>(null);
+  const [isLoadingNotices, setIsLoadingNotices] = useState(false);
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
@@ -109,8 +127,8 @@ export default function AdminPanel() {
       setRegistrations(regs as Registration[]);
       setAdminLastSeen(lastSeen);
     } catch (err) {
-      console.error("Failed to fetch registrations:", err);
-      setRegError("Registrations load nahi ho payi. Dobara try karein.");
+      console.error(err);
+      setRegError("Registrations load nahi ho payi.");
     } finally {
       setIsLoadingRegs(false);
     }
@@ -123,18 +141,36 @@ export default function AdminPanel() {
       const chapters = await actor.getAllChapters();
       setPdfEntries(chapters as PdfChapter[]);
     } catch (err) {
-      console.error("Failed to fetch PDFs:", err);
+      console.error(err);
     } finally {
       setIsLoadingPdfs(false);
     }
   }, [actor]);
 
+  const fetchNotices = useCallback(async () => {
+    if (!actor) return;
+    setIsLoadingNotices(true);
+    try {
+      const ns = await actor.getNotices();
+      setNotices(
+        [...(ns as Notice[])].sort(
+          (a, b) => Number(b.createdAt) - Number(a.createdAt),
+        ),
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingNotices(false);
+    }
+  }, [actor]);
+
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && actor) {
       fetchRegistrations();
       fetchPdfs();
+      fetchNotices();
     }
-  }, [isLoggedIn, fetchRegistrations, fetchPdfs]);
+  }, [isLoggedIn, actor, fetchRegistrations, fetchPdfs, fetchNotices]);
 
   const handleRegistrationsTabOpen = async () => {
     if (!actor) return;
@@ -143,7 +179,7 @@ export default function AdminPanel() {
       const now = BigInt(Date.now()) * BigInt(1_000_000);
       setAdminLastSeen(now);
     } catch (err) {
-      console.error("Failed to update adminLastSeen:", err);
+      console.error(err);
     }
   };
 
@@ -156,10 +192,7 @@ export default function AdminPanel() {
       toast.error("Sabhi fields fill karein");
       return;
     }
-    if (!actor) {
-      toast.error("Backend se connect nahi ho pa raha.");
-      return;
-    }
+    if (!actor) return;
     setIsAddingPdf(true);
     try {
       await actor.addPdfChapter(
@@ -173,10 +206,48 @@ export default function AdminPanel() {
       setPdfUrl("");
       await fetchPdfs();
     } catch (err) {
-      console.error("Failed to add PDF:", err);
-      toast.error("PDF add karne mein dikkat aayi.");
+      console.error(err);
+      toast.error("PDF add nahi ho paya.");
     } finally {
       setIsAddingPdf(false);
+    }
+  };
+
+  const handleAddNotice = async () => {
+    if (!noticeText.trim()) {
+      toast.error("Soochna likhein");
+      return;
+    }
+    if (!actor) {
+      toast.error("App load ho rahi hai, thoda wait karein");
+      return;
+    }
+    setIsAddingNotice(true);
+    try {
+      await actor.addNotice(noticeText.trim());
+      toast.success("Soochna post ho gayi!");
+      setNoticeText("");
+      await fetchNotices();
+    } catch (err) {
+      console.error(err);
+      toast.error("Soochna post nahi ho payi.");
+    } finally {
+      setIsAddingNotice(false);
+    }
+  };
+
+  const handleDeleteNotice = async (id: bigint) => {
+    if (!actor) return;
+    setIsDeletingNotice(id);
+    try {
+      await actor.deleteNotice(id);
+      toast.success("Soochna hata di gayi!");
+      await fetchNotices();
+    } catch (err) {
+      console.error(err);
+      toast.error("Delete nahi ho paya.");
+    } finally {
+      setIsDeletingNotice(null);
     }
   };
 
@@ -198,7 +269,6 @@ export default function AdminPanel() {
                 Sonu Sir Class — Admin Panel
               </p>
             </div>
-
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="admin-password" className="text-sm font-medium">
@@ -231,7 +301,6 @@ export default function AdminPanel() {
                 Login Karein
               </Button>
             </div>
-
             <div className="mt-6 text-center">
               <button
                 type="button"
@@ -251,7 +320,6 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-secondary/40">
       <Toaster position="top-center" />
-      {/* Admin Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-border shadow-xs px-4 py-3">
         <div className="container max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -294,14 +362,20 @@ export default function AdminPanel() {
 
       <div className="container max-w-6xl mx-auto px-4 py-8">
         <Tabs
-          defaultValue="registrations"
+          defaultValue="notices"
           onValueChange={(val) => {
-            if (val === "registrations") {
-              handleRegistrationsTabOpen();
-            }
+            if (val === "registrations") handleRegistrationsTabOpen();
           }}
         >
           <TabsList className="mb-6 bg-white border border-border shadow-xs">
+            <TabsTrigger value="notices" data-ocid="admin.tab">
+              📋 Soochna Board
+              {notices.length > 0 && (
+                <Badge className="ml-2 bg-amber-600 text-white text-xs h-5 px-1.5">
+                  {notices.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger
               value="registrations"
               data-ocid="admin.tab"
@@ -328,6 +402,131 @@ export default function AdminPanel() {
             </TabsTrigger>
           </TabsList>
 
+          {/* Soochna Board Tab */}
+          <TabsContent value="notices">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Add Notice */}
+              <div className="form-card overflow-hidden">
+                <div className="form-header-stripe" />
+                <div className="p-6">
+                  <h2 className="font-display font-bold text-lg text-foreground mb-1">
+                    Nai Soochna Post Karein
+                  </h2>
+                  <p className="text-xs text-muted-foreground mb-5">
+                    Yeh soochna sabhi students ko dikhegi app ke upar.
+                  </p>
+                  {isFetching && (
+                    <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin shrink-0" />
+                      <p className="text-xs text-amber-700 font-medium">
+                        App connect ho rahi hai, thoda wait karein...
+                      </p>
+                    </div>
+                  )}
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">
+                        Soochna ka Sandesh
+                      </Label>
+                      <textarea
+                        className="w-full min-h-[100px] rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        placeholder="Jaise: Kal ka class band rahega. Agle Monday ko test hoga."
+                        value={noticeText}
+                        onChange={(e) => setNoticeText(e.target.value)}
+                        data-ocid="admin.textarea"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleAddNotice}
+                      disabled={isAddingNotice || isFetching || !actor}
+                      className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-60"
+                      data-ocid="admin.submit_button"
+                    >
+                      {isAddingNotice ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : isFetching ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4 mr-2" />
+                      )}
+                      {isFetching
+                        ? "Connect ho rahi hai..."
+                        : "Soochna Post Karein"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Existing Notices */}
+              <div className="form-card overflow-hidden">
+                <div className="form-header-stripe" />
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-display font-bold text-lg text-foreground">
+                      Active Soochnayen ({notices.length})
+                    </h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={fetchNotices}
+                      disabled={isLoadingNotices}
+                      data-ocid="admin.secondary_button"
+                    >
+                      {isLoadingNotices ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        "Refresh"
+                      )}
+                    </Button>
+                  </div>
+                  {isLoadingNotices ? (
+                    <div
+                      className="text-center py-10"
+                      data-ocid="admin.loading_state"
+                    >
+                      <Loader2 className="w-6 h-6 mx-auto animate-spin text-primary" />
+                    </div>
+                  ) : notices.length === 0 ? (
+                    <div
+                      className="text-center py-10 text-muted-foreground"
+                      data-ocid="admin.empty_state"
+                    >
+                      <p className="text-sm">Abhi koi soochna nahi hai.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
+                      {notices.map((notice, i) => (
+                        <div
+                          key={String(notice.id)}
+                          className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200"
+                          data-ocid={`admin.item.${i + 1}`}
+                        >
+                          <span className="text-base mt-0.5">📌</span>
+                          <p className="text-sm text-gray-800 flex-1 leading-snug">
+                            {notice.text}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteNotice(notice.id)}
+                            disabled={isDeletingNotice === notice.id}
+                            className="shrink-0 p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            data-ocid={`admin.delete_button.${i + 1}`}
+                          >
+                            {isDeletingNotice === notice.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
           {/* Registrations Tab */}
           <TabsContent value="registrations">
             <div className="form-card overflow-hidden">
@@ -351,7 +550,6 @@ export default function AdminPanel() {
                     )}
                   </Button>
                 </div>
-
                 {newRegCount > 0 && (
                   <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
                     <Bell className="w-4 h-4 text-red-500 shrink-0" />
@@ -361,14 +559,13 @@ export default function AdminPanel() {
                     </p>
                   </div>
                 )}
-
                 {isLoadingRegs ? (
                   <div
                     className="text-center py-12 text-muted-foreground"
                     data-ocid="admin.loading_state"
                   >
                     <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-primary" />
-                    <p>Registrations load ho rahi hain...</p>
+                    <p>Load ho raha hai...</p>
                   </div>
                 ) : regError ? (
                   <div
@@ -461,7 +658,6 @@ export default function AdminPanel() {
           {/* PDF Management Tab */}
           <TabsContent value="pdfs">
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Add PDF Form */}
               <div className="form-card overflow-hidden">
                 <div className="form-header-stripe" />
                 <div className="p-6">
@@ -484,7 +680,6 @@ export default function AdminPanel() {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">Class</Label>
                       <Select value={pdfClass} onValueChange={setPdfClass}>
@@ -500,19 +695,17 @@ export default function AdminPanel() {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">
                         Chapter Name
                       </Label>
                       <Input
-                        placeholder="Jaise: Chapter 1 - Number System"
+                        placeholder="Jaise: Adhyay 1 - Number System"
                         value={pdfChapter}
                         onChange={(e) => setPdfChapter(e.target.value)}
                         data-ocid="admin.input"
                       />
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">
                         PDF URL / Link
@@ -524,7 +717,6 @@ export default function AdminPanel() {
                         data-ocid="admin.input"
                       />
                     </div>
-
                     <Button
                       onClick={handleAddPDF}
                       disabled={isAddingPdf}
@@ -541,8 +733,6 @@ export default function AdminPanel() {
                   </div>
                 </div>
               </div>
-
-              {/* PDF List */}
               <div className="form-card overflow-hidden">
                 <div className="form-header-stripe" />
                 <div className="p-6">
@@ -564,16 +754,7 @@ export default function AdminPanel() {
                       )}
                     </Button>
                   </div>
-
-                  {isLoadingPdfs ? (
-                    <div
-                      className="text-center py-10 text-muted-foreground"
-                      data-ocid="admin.loading_state"
-                    >
-                      <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-primary" />
-                      <p className="text-sm">PDFs load ho rahi hain...</p>
-                    </div>
-                  ) : pdfEntries.length === 0 ? (
+                  {pdfEntries.length === 0 ? (
                     <div
                       className="text-center py-10 text-muted-foreground"
                       data-ocid="admin.empty_state"
@@ -583,14 +764,11 @@ export default function AdminPanel() {
                       </p>
                     </div>
                   ) : (
-                    <div
-                      className="space-y-2 max-h-96 overflow-y-auto"
-                      data-ocid="admin.list"
-                    >
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
                       {pdfEntries.map((pdf, i) => (
                         <div
-                          key={`${pdf.subject}-${pdf.className}-${pdf.chapterName}-${i}`}
-                          className="p-3 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors"
+                          key={`${pdf.subject}-${pdf.className}-${i}`}
+                          className="p-3 rounded-lg bg-secondary/60"
                           data-ocid={`admin.item.${i + 1}`}
                         >
                           <div className="flex gap-2 mb-1 flex-wrap">
@@ -611,10 +789,6 @@ export default function AdminPanel() {
                       ))}
                     </div>
                   )}
-
-                  <p className="text-xs text-muted-foreground mt-4 border-t border-border pt-3">
-                    ℹ️ PDF delete karne ke liye admin se contact karein.
-                  </p>
                 </div>
               </div>
             </div>

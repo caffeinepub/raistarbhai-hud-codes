@@ -15,6 +15,11 @@ export interface HudLayout {
   'name' : string,
   'description' : string,
 }
+export interface Notice {
+  'id' : bigint,
+  'text' : string,
+  'createdAt' : bigint,
+}
 export interface PdfChapter {
   'subject' : string,
   'pdfUrl' : string,
@@ -30,7 +35,9 @@ export interface StudentRegistration {
   'parentName' : string,
 }
 export interface _SERVICE {
+  'addNotice' : ActorMethod<[string], bigint>,
   'addPdfChapter' : ActorMethod<[string, string, string, string], undefined>,
+  'deleteNotice' : ActorMethod<[bigint], boolean>,
   'deletePdfChapter' : ActorMethod<[bigint], boolean>,
   'getAdminLastSeen' : ActorMethod<[], bigint>,
   'getAllChapters' : ActorMethod<[], Array<PdfChapter>>,
@@ -42,6 +49,7 @@ export interface _SERVICE {
     Array<PdfChapter>
   >,
   'getHudCodeByName' : ActorMethod<[string], HudLayout>,
+  'getNotices' : ActorMethod<[], Array<Notice>>,
   'registerStudent' : ActorMethod<
     [string, string, string, string, string],
     undefined

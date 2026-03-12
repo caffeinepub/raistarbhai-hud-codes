@@ -108,6 +108,11 @@ export interface HudLayout {
     name: string;
     description: string;
 }
+export interface Notice {
+    id: bigint;
+    text: string;
+    createdAt: bigint;
+}
 export interface backendInterface {
     addPdfChapter(subject: string, chapterName: string, pdfUrl: string, className: string): Promise<void>;
     deletePdfChapter(chapterId: bigint): Promise<boolean>;
@@ -120,6 +125,9 @@ export interface backendInterface {
     getHudCodeByName(name: string): Promise<HudLayout>;
     registerStudent(studentName: string, className: string, subject: string, mobile: string, parentName: string): Promise<void>;
     setAdminLastSeen(): Promise<void>;
+    addNotice(text: string): Promise<bigint>;
+    deleteNotice(id: bigint): Promise<boolean>;
+    getNotices(): Promise<Array<Notice>>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
@@ -280,6 +288,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.setAdminLastSeen();
+            return result;
+        }
+    }
+    async addNotice(arg0: string): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addNotice(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addNotice(arg0);
+            return result;
+        }
+    }
+    async deleteNotice(arg0: bigint): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteNotice(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteNotice(arg0);
+            return result;
+        }
+    }
+    async getNotices(): Promise<Array<Notice>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getNotices();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getNotices();
             return result;
         }
     }

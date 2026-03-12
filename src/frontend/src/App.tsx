@@ -7,6 +7,7 @@ import FeaturesSection from "./components/FeaturesSection";
 import Footer from "./components/Footer";
 import HeroSection from "./components/HeroSection";
 import Navbar from "./components/Navbar";
+import NoticeBoard from "./components/NoticeBoard";
 import RegistrationForm from "./components/RegistrationForm";
 import SubjectPDFSection from "./components/SubjectPDFSection";
 import SubjectsSection from "./components/SubjectsSection";
@@ -36,6 +37,7 @@ export default function App() {
     <div className="min-h-screen bg-background font-body">
       <Toaster position="top-center" />
       <Navbar />
+      <NoticeBoard />
       <main>
         <HeroSection />
         <SubjectsSection />

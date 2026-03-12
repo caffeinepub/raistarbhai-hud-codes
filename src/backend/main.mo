@@ -1,10 +1,8 @@
-import List "mo:core/List";
 import Iter "mo:core/Iter";
 import Text "mo:core/Text";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Map "mo:core/Map";
-
 import Nat "mo:core/Nat";
 import Int "mo:core/Int";
 import Array "mo:core/Array";
@@ -27,13 +25,52 @@ actor {
     className : Text;
   };
 
-  let registrations = Map.empty<Nat, StudentRegistration>();
-  var nextId = 0;
+  type Notice = {
+    id : Nat;
+    text : Text;
+    createdAt : Int;
+  };
 
-  let chapters = Map.empty<Nat, PdfChapter>();
-  var nextChapterId = 0;
-
+  // Stable storage so data survives canister upgrades
+  var stableRegistrations : [(Nat, StudentRegistration)] = [];
+  var stableChapters : [(Nat, PdfChapter)] = [];
+  var stableNotices : [(Nat, Notice)] = [];
+  var stableNextId : Nat = 0;
+  var stableNextChapterId : Nat = 0;
+  var stableNextNoticeId : Nat = 0;
   var adminLastSeen : Int = 0;
+
+  // In-memory maps loaded from stable storage
+  let registrations = Map.fromIter<Nat, StudentRegistration>(
+    stableRegistrations.values()
+  );
+  var nextId = stableNextId;
+
+  let chapters = Map.fromIter<Nat, PdfChapter>(
+    stableChapters.values()
+  );
+  var nextChapterId = stableNextChapterId;
+
+  let noticeMap = Map.fromIter<Nat, Notice>(
+    stableNotices.values()
+  );
+  var nextNoticeId = stableNextNoticeId;
+
+  // Sync in-memory to stable before upgrade
+  system func preupgrade() {
+    stableRegistrations := registrations.entries().toArray();
+    stableChapters := chapters.entries().toArray();
+    stableNotices := noticeMap.entries().toArray();
+    stableNextId := nextId;
+    stableNextChapterId := nextChapterId;
+    stableNextNoticeId := nextNoticeId;
+  };
+
+  system func postupgrade() {
+    stableRegistrations := [];
+    stableChapters := [];
+    stableNotices := [];
+  };
 
   public shared ({ caller }) func registerStudent(studentName : Text, className : Text, subject : Text, mobile : Text, parentName : Text) : async () {
     let registration : StudentRegistration = {
@@ -100,6 +137,32 @@ actor {
 
   public query ({ caller }) func getAdminLastSeen() : async Int {
     adminLastSeen;
+  };
+
+  // Notice Board
+  public shared ({ caller }) func addNotice(text : Text) : async Nat {
+    let notice : Notice = {
+      id = nextNoticeId;
+      text;
+      createdAt = Time.now();
+    };
+    noticeMap.add(nextNoticeId, notice);
+    let id = nextNoticeId;
+    nextNoticeId += 1;
+    id;
+  };
+
+  public shared ({ caller }) func deleteNotice(id : Nat) : async Bool {
+    if (noticeMap.containsKey(id)) {
+      noticeMap.remove(id);
+      true;
+    } else {
+      false;
+    };
+  };
+
+  public query ({ caller }) func getNotices() : async [Notice] {
+    noticeMap.values().toArray();
   };
 
   type HudLayout = {

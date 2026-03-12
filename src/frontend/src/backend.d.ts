@@ -26,6 +26,11 @@ export interface HudLayout {
     name: string;
     description: string;
 }
+export interface Notice {
+    id: bigint;
+    text: string;
+    createdAt: bigint;
+}
 export interface backendInterface {
     addPdfChapter(subject: string, chapterName: string, pdfUrl: string, className: string): Promise<void>;
     deletePdfChapter(chapterId: bigint): Promise<boolean>;
@@ -38,4 +43,7 @@ export interface backendInterface {
     getHudCodeByName(name: string): Promise<HudLayout>;
     registerStudent(studentName: string, className: string, subject: string, mobile: string, parentName: string): Promise<void>;
     setAdminLastSeen(): Promise<void>;
+    addNotice(text: string): Promise<bigint>;
+    deleteNotice(id: bigint): Promise<boolean>;
+    getNotices(): Promise<Array<Notice>>;
 }
