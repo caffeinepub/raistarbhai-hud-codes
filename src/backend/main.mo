@@ -31,16 +31,26 @@ actor {
     createdAt : Int;
   };
 
-  // Stable storage so data survives canister upgrades
+  type AttendanceRecord = {
+    studentName : Text;
+    className : Text;
+    rollNumber : Text;
+    date : Text;
+    markedAt : Int;
+  };
+
   stable var stableRegistrations : [(Nat, StudentRegistration)] = [];
   stable var stableChapters : [(Nat, PdfChapter)] = [];
   stable var stableNotices : [(Nat, Notice)] = [];
+  stable var stableAttendance : [(Nat, AttendanceRecord)] = [];
   stable var stableNextId : Nat = 0;
   stable var stableNextChapterId : Nat = 0;
   stable var stableNextNoticeId : Nat = 0;
+  stable var stableNextAttendanceId : Nat = 0;
   stable var adminLastSeen : Int = 0;
+  stable var heroPhotoUrl : Text = "";
+  stable var attendanceWindowOpen : Bool = false;
 
-  // In-memory maps loaded from stable storage
   let registrations = Map.fromIter<Nat, StudentRegistration>(
     stableRegistrations.values()
   );
@@ -56,20 +66,27 @@ actor {
   );
   var nextNoticeId = stableNextNoticeId;
 
-  // Sync in-memory to stable before upgrade
+  let attendanceMap = Map.fromIter<Nat, AttendanceRecord>(
+    stableAttendance.values()
+  );
+  var nextAttendanceId = stableNextAttendanceId;
+
   system func preupgrade() {
     stableRegistrations := registrations.entries().toArray();
     stableChapters := chapters.entries().toArray();
     stableNotices := noticeMap.entries().toArray();
+    stableAttendance := attendanceMap.entries().toArray();
     stableNextId := nextId;
     stableNextChapterId := nextChapterId;
     stableNextNoticeId := nextNoticeId;
+    stableNextAttendanceId := nextAttendanceId;
   };
 
   system func postupgrade() {
     stableRegistrations := [];
     stableChapters := [];
     stableNotices := [];
+    stableAttendance := [];
   };
 
   public shared ({ caller }) func registerStudent(studentName : Text, className : Text, subject : Text, mobile : Text, parentName : Text) : async () {
@@ -119,12 +136,11 @@ actor {
   };
 
   public query ({ caller }) func getChaptersBySubject(subject : Text) : async [PdfChapter] {
-    let filtered = chapters.values().toArray().filter(
+    chapters.values().toArray().filter(
       func(chapter) {
-        Text.equal(chapter.subject, subject);
+        Text.equal(chapter.subject, subject)
       }
     );
-    filtered;
   };
 
   public query ({ caller }) func getChaptersBySubjectAndClass(subject : Text, className : Text) : async [PdfChapter] {
@@ -137,6 +153,15 @@ actor {
 
   public query ({ caller }) func getAdminLastSeen() : async Int {
     adminLastSeen;
+  };
+
+  // Hero Photo
+  public shared ({ caller }) func setHeroPhoto(url : Text) : async () {
+    heroPhotoUrl := url;
+  };
+
+  public query ({ caller }) func getHeroPhoto() : async Text {
+    heroPhotoUrl;
   };
 
   // Notice Board
@@ -163,6 +188,53 @@ actor {
 
   public query ({ caller }) func getNotices() : async [Notice] {
     noticeMap.values().toArray();
+  };
+
+  // Attendance Window Control
+  public shared ({ caller }) func setAttendanceWindow(isOpen : Bool) : async () {
+    attendanceWindowOpen := isOpen;
+  };
+
+  public query ({ caller }) func getAttendanceWindowStatus() : async Bool {
+    attendanceWindowOpen;
+  };
+
+  // Attendance System
+  public shared ({ caller }) func markAttendance(studentName : Text, className : Text, rollNumber : Text, date : Text) : async Text {
+    if (not attendanceWindowOpen) {
+      return "closed";
+    };
+    var alreadyMarked = false;
+    for ((_, r) in attendanceMap.entries()) {
+      if (Text.equal(r.rollNumber, rollNumber) and Text.equal(r.className, className) and Text.equal(r.date, date)) {
+        alreadyMarked := true;
+      };
+    };
+    if (alreadyMarked) {
+      return "alreadyMarked";
+    };
+    let record : AttendanceRecord = {
+      studentName;
+      className;
+      rollNumber;
+      date;
+      markedAt = Time.now();
+    };
+    attendanceMap.add(nextAttendanceId, record);
+    nextAttendanceId += 1;
+    "ok";
+  };
+
+  public query ({ caller }) func getAllAttendance() : async [AttendanceRecord] {
+    attendanceMap.values().toArray();
+  };
+
+  public query ({ caller }) func getAttendanceByDate(date : Text) : async [AttendanceRecord] {
+    attendanceMap.values().toArray().filter(func(r : AttendanceRecord) : Bool { Text.equal(r.date, date) });
+  };
+
+  public query ({ caller }) func getAttendanceByClassAndDate(className : Text, date : Text) : async [AttendanceRecord] {
+    attendanceMap.values().toArray().filter(func(r : AttendanceRecord) : Bool { Text.equal(r.className, className) and Text.equal(r.date, date) });
   };
 
   type HudLayout = {

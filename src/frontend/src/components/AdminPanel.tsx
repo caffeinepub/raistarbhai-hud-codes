@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useActor } from "@/hooks/useActor";
 import {
   Bell,
+  CalendarCheck,
   GraduationCap,
   Loader2,
   Lock,
@@ -73,6 +74,14 @@ interface Notice {
   createdAt: bigint;
 }
 
+interface AttendanceRecord {
+  studentName: string;
+  className: string;
+  rollNumber: string;
+  date: string;
+  markedAt: bigint;
+}
+
 function normalizeRegistration(raw: any): Registration {
   return {
     studentName: raw.studentName || raw.student_name || raw.name || "",
@@ -109,6 +118,20 @@ export default function AdminPanel() {
   const [isDeletingNotice, setIsDeletingNotice] = useState<bigint | null>(null);
   const [isLoadingNotices, setIsLoadingNotices] = useState(false);
 
+  // Attendance state
+  const [attendanceRecords, setAttendanceRecords] = useState<
+    AttendanceRecord[]
+  >([]);
+  const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
+  const [attendanceFilterDate, setAttendanceFilterDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [attendanceFilterClass, setAttendanceFilterClass] = useState("all");
+  const [attendanceWindowOpen, setAttendanceWindowOpen] = useState<
+    boolean | null
+  >(null);
+  const [isTogglingWindow, setIsTogglingWindow] = useState(false);
+
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
       setIsLoggedIn(true);
@@ -135,7 +158,6 @@ export default function AdminPanel() {
     setRegError("");
     try {
       const result = await actor.getAllRegistrations();
-      // Backend returns [Array<StudentRegistration>, bigint]
       const [regs, lastSeen] = result as [any[], bigint];
       setRegistrations(regs.map(normalizeRegistration));
       setAdminLastSeen(lastSeen);
@@ -177,6 +199,31 @@ export default function AdminPanel() {
     }
   }, [actor]);
 
+  const fetchAttendance = useCallback(
+    async (filterClass: string, filterDate: string) => {
+      if (!actor) return;
+      setIsLoadingAttendance(true);
+      try {
+        let records: any[];
+        if (filterClass === "all") {
+          records = await actor.getAttendanceByDate(filterDate);
+        } else {
+          records = await actor.getAttendanceByClassAndDate(
+            filterClass,
+            filterDate,
+          );
+        }
+        setAttendanceRecords(records as AttendanceRecord[]);
+      } catch (err) {
+        console.error(err);
+        toast.error("Attendance load nahi ho payi.");
+      } finally {
+        setIsLoadingAttendance(false);
+      }
+    },
+    [actor],
+  );
+
   useEffect(() => {
     if (isLoggedIn && actor) {
       fetchRegistrations();
@@ -193,6 +240,36 @@ export default function AdminPanel() {
       setAdminLastSeen(now);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleAttendanceTabOpen = () => {
+    fetchAttendance(attendanceFilterClass, attendanceFilterDate);
+    if (actor) {
+      actor
+        .getAttendanceWindowStatus()
+        .then(setAttendanceWindowOpen)
+        .catch(() => {});
+    }
+  };
+
+  const handleToggleAttendanceWindow = async () => {
+    if (!actor) return;
+    setIsTogglingWindow(true);
+    try {
+      const newState = !attendanceWindowOpen;
+      await actor.setAttendanceWindow(newState);
+      setAttendanceWindowOpen(newState);
+      toast.success(
+        newState
+          ? "Attendance khul gayi! Students ab attendance laga sakte hain."
+          : "Attendance band ho gayi.",
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Window toggle nahi ho payi.");
+    } finally {
+      setIsTogglingWindow(false);
     }
   };
 
@@ -378,9 +455,10 @@ export default function AdminPanel() {
           defaultValue="notices"
           onValueChange={(val) => {
             if (val === "registrations") handleRegistrationsTabOpen();
+            if (val === "attendance") handleAttendanceTabOpen();
           }}
         >
-          <TabsList className="mb-6 bg-white border border-border shadow-xs">
+          <TabsList className="mb-6 bg-white border border-border shadow-xs flex-wrap h-auto gap-1">
             <TabsTrigger value="notices" data-ocid="admin.tab">
               📋 Soochna Board
               {notices.length > 0 && (
@@ -412,6 +490,10 @@ export default function AdminPanel() {
                   {pdfEntries.length}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="attendance" data-ocid="admin.tab">
+              <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />
+              Attendance
             </TabsTrigger>
           </TabsList>
 
@@ -803,6 +885,244 @@ export default function AdminPanel() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Attendance Tab */}
+          <TabsContent value="attendance">
+            <div className="form-card overflow-hidden">
+              <div className="form-header-stripe" />
+              <div className="p-6">
+                {/* Header + Filter Row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <h2 className="font-display font-bold text-lg text-foreground">
+                      Student Attendance
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Date aur class ke hisaab se haziri dekhen.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      fetchAttendance(
+                        attendanceFilterClass,
+                        attendanceFilterDate,
+                      )
+                    }
+                    disabled={isLoadingAttendance}
+                    data-ocid="admin.secondary_button"
+                  >
+                    {isLoadingAttendance ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      "Refresh"
+                    )}
+                  </Button>
+                </div>
+
+                {/* Attendance Window Control */}
+                <div
+                  className={`flex items-center justify-between p-4 rounded-xl border mb-4 ${attendanceWindowOpen ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
+                >
+                  <div>
+                    <p
+                      className={`text-sm font-semibold ${attendanceWindowOpen ? "text-green-800" : "text-red-800"}`}
+                    >
+                      {attendanceWindowOpen === null
+                        ? "Window status load ho rahi hai..."
+                        : attendanceWindowOpen
+                          ? "✅ Attendance Khuli Hai — Students mark kar sakte hain"
+                          : "🔒 Attendance Band Hai — Students mark nahi kar sakte"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Yahan se attendance kholo ya band karo
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleToggleAttendanceWindow}
+                    disabled={
+                      isTogglingWindow ||
+                      !actor ||
+                      attendanceWindowOpen === null
+                    }
+                    size="sm"
+                    className={
+                      attendanceWindowOpen
+                        ? "bg-red-600 hover:bg-red-700 text-white"
+                        : "bg-green-600 hover:bg-green-700 text-white"
+                    }
+                    data-ocid="admin.toggle"
+                  >
+                    {isTogglingWindow ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : attendanceWindowOpen ? (
+                      "Band Karo"
+                    ) : (
+                      "Kholo"
+                    )}
+                  </Button>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-3 mb-6 p-4 bg-secondary/40 rounded-xl border border-border">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Date
+                    </Label>
+                    <Input
+                      type="date"
+                      value={attendanceFilterDate}
+                      onChange={(e) => setAttendanceFilterDate(e.target.value)}
+                      className="h-9 text-sm"
+                      data-ocid="admin.input"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Class
+                    </Label>
+                    <Select
+                      value={attendanceFilterClass}
+                      onValueChange={setAttendanceFilterClass}
+                    >
+                      <SelectTrigger
+                        className="h-9 text-sm"
+                        data-ocid="admin.select"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Sabhi Classes</SelectItem>
+                        {CLASSES.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      onClick={() =>
+                        fetchAttendance(
+                          attendanceFilterClass,
+                          attendanceFilterDate,
+                        )
+                      }
+                      disabled={isLoadingAttendance || !actor}
+                      className="w-full sm:w-auto h-9 bg-primary text-primary-foreground hover:opacity-90 font-semibold text-sm"
+                      data-ocid="admin.primary_button"
+                    >
+                      {isLoadingAttendance ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />
+                      )}
+                      Dekho
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Count badge */}
+                {!isLoadingAttendance && attendanceRecords.length > 0 && (
+                  <div className="mb-4 flex items-center gap-2">
+                    <Badge className="bg-green-100 text-green-800 border-green-200 border text-xs font-semibold">
+                      ✅ Kul {attendanceRecords.length} student
+                      {attendanceRecords.length > 1 ? "s" : ""} present
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {attendanceFilterDate}
+                      {attendanceFilterClass !== "all"
+                        ? ` — ${attendanceFilterClass}`
+                        : " — Sabhi Classes"}
+                    </span>
+                  </div>
+                )}
+
+                {/* Table */}
+                {isLoadingAttendance ? (
+                  <div
+                    className="text-center py-12"
+                    data-ocid="admin.loading_state"
+                  >
+                    <Loader2 className="w-7 h-7 mx-auto animate-spin text-primary mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Attendance load ho rahi hai...
+                    </p>
+                  </div>
+                ) : attendanceRecords.length === 0 ? (
+                  <div
+                    className="text-center py-14 text-muted-foreground"
+                    data-ocid="admin.empty_state"
+                  >
+                    <CalendarCheck className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                    <p className="text-sm font-medium">
+                      Is date ke liye koi attendance nahi mili.
+                    </p>
+                    <p className="text-xs mt-1">
+                      Date ya class filter badal kar dobara dekhen.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto" data-ocid="admin.table">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-10">#</TableHead>
+                          <TableHead>Student Naam</TableHead>
+                          <TableHead>Class</TableHead>
+                          <TableHead>Roll No.</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Samay</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {attendanceRecords.map((rec, i) => {
+                          const markedTime = new Date(
+                            Number(rec.markedAt / BigInt(1_000_000)),
+                          );
+                          return (
+                            <TableRow
+                              key={`${rec.rollNumber}-${rec.className}-${rec.date}`}
+                              data-ocid={`admin.row.${i + 1}`}
+                            >
+                              <TableCell className="text-muted-foreground text-sm">
+                                {i + 1}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {rec.studentName || "—"}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs font-normal"
+                                >
+                                  {rec.className}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-mono text-sm">
+                                {rec.rollNumber}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {rec.date}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {markedTime.toLocaleTimeString("en-IN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>

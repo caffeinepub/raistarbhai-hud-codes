@@ -18,15 +18,10 @@ export interface None {
 }
 export type Option<T> = Some<T> | None;
 function some<T>(value: T): Some<T> {
-    return {
-        __kind__: "Some",
-        value: value
-    };
+    return { __kind__: "Some", value };
 }
 function none(): None {
-    return {
-        __kind__: "None"
-    };
+    return { __kind__: "None" };
 }
 function isNone<T>(option: Option<T>): option is None {
     return option.__kind__ === "None";
@@ -35,19 +30,11 @@ function isSome<T>(option: Option<T>): option is Some<T> {
     return option.__kind__ === "Some";
 }
 function unwrap<T>(option: Option<T>): T {
-    if (isNone(option)) {
-        throw new Error("unwrap: none");
-    }
+    if (isNone(option)) throw new Error("unwrap: none");
     return option.value;
 }
-function candid_some<T>(value: T): [T] {
-    return [
-        value
-    ];
-}
-function candid_none<T>(): [] {
-    return [];
-}
+function candid_some<T>(value: T): [T] { return [value]; }
+function candid_none<T>(): [] { return []; }
 function record_opt_to_undefined<T>(arg: T | null): T | undefined {
     return arg == null ? undefined : arg;
 }
@@ -55,35 +42,23 @@ export class ExternalBlob {
     _blob?: Uint8Array<ArrayBuffer> | null;
     directURL: string;
     onProgress?: (percentage: number) => void = undefined;
-    private constructor(directURL: string, blob: Uint8Array<ArrayBuffer> | null){
-        if (blob) {
-            this._blob = blob;
-        }
+    private constructor(directURL: string, blob: Uint8Array<ArrayBuffer> | null) {
+        if (blob) { this._blob = blob; }
         this.directURL = directURL;
     }
-    static fromURL(url: string): ExternalBlob {
-        return new ExternalBlob(url, null);
-    }
+    static fromURL(url: string): ExternalBlob { return new ExternalBlob(url, null); }
     static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob {
-        const url = URL.createObjectURL(new Blob([
-            new Uint8Array(blob)
-        ], {
-            type: 'application/octet-stream'
-        }));
+        const url = URL.createObjectURL(new Blob([new Uint8Array(blob)], { type: 'application/octet-stream' }));
         return new ExternalBlob(url, blob);
     }
     public async getBytes(): Promise<Uint8Array<ArrayBuffer>> {
-        if (this._blob) {
-            return this._blob;
-        }
+        if (this._blob) return this._blob;
         const response = await fetch(this.directURL);
         const blob = await response.blob();
         this._blob = new Uint8Array(await blob.arrayBuffer());
         return this._blob;
     }
-    public getDirectURL(): string {
-        return this.directURL;
-    }
+    public getDirectURL(): string { return this.directURL; }
     public withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob {
         this.onProgress = onProgress;
         return this;
@@ -113,6 +88,13 @@ export interface Notice {
     text: string;
     createdAt: bigint;
 }
+export interface AttendanceRecord {
+    studentName: string;
+    className: string;
+    rollNumber: string;
+    date: string;
+    markedAt: bigint;
+}
 export interface backendInterface {
     addPdfChapter(subject: string, chapterName: string, pdfUrl: string, className: string): Promise<void>;
     deletePdfChapter(chapterId: bigint): Promise<boolean>;
@@ -125,214 +107,57 @@ export interface backendInterface {
     getHudCodeByName(name: string): Promise<HudLayout>;
     registerStudent(studentName: string, className: string, subject: string, mobile: string, parentName: string): Promise<void>;
     setAdminLastSeen(): Promise<void>;
+    setHeroPhoto(url: string): Promise<void>;
+    getHeroPhoto(): Promise<string>;
     addNotice(text: string): Promise<bigint>;
     deleteNotice(id: bigint): Promise<boolean>;
     getNotices(): Promise<Array<Notice>>;
+    markAttendance(studentName: string, className: string, rollNumber: string, date: string): Promise<string>;
+    getAllAttendance(): Promise<Array<AttendanceRecord>>;
+    getAttendanceByDate(date: string): Promise<Array<AttendanceRecord>>;
+    getAttendanceByClassAndDate(className: string, date: string): Promise<Array<AttendanceRecord>>;
+    setAttendanceWindow(isOpen: boolean): Promise<void>;
+    getAttendanceWindowStatus(): Promise<boolean>;
 }
 export class Backend implements backendInterface {
-    constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
-    async addPdfChapter(arg0: string, arg1: string, arg2: string, arg3: string): Promise<void> {
+    constructor(
+        private actor: ActorSubclass<_SERVICE>,
+        private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>,
+        private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>,
+        private processError?: (error: unknown) => never
+    ) {}
+
+    private async call<T>(fn: () => Promise<T>): Promise<T> {
         if (this.processError) {
-            try {
-                const result = await this.actor.addPdfChapter(arg0, arg1, arg2, arg3);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.addPdfChapter(arg0, arg1, arg2, arg3);
-            return result;
+            try { return await fn(); } catch (e) { this.processError(e); throw new Error("unreachable"); }
         }
+        return fn();
     }
-    async deletePdfChapter(arg0: bigint): Promise<boolean> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.deletePdfChapter(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.deletePdfChapter(arg0);
-            return result;
-        }
-    }
-    async getAdminLastSeen(): Promise<bigint> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAdminLastSeen();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAdminLastSeen();
-            return result;
-        }
-    }
-    async getAllChapters(): Promise<Array<PdfChapter>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllChapters();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllChapters();
-            return result;
-        }
-    }
-    async getAllHudCodes(): Promise<Array<HudLayout>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllHudCodes();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllHudCodes();
-            return result;
-        }
-    }
+
+    async addPdfChapter(a: string, b: string, c: string, d: string): Promise<void> { return this.call(() => this.actor.addPdfChapter(a, b, c, d)); }
+    async deletePdfChapter(a: bigint): Promise<boolean> { return this.call(() => this.actor.deletePdfChapter(a)); }
+    async getAdminLastSeen(): Promise<bigint> { return this.call(() => this.actor.getAdminLastSeen()); }
+    async getAllChapters(): Promise<Array<PdfChapter>> { return this.call(() => this.actor.getAllChapters()); }
+    async getAllHudCodes(): Promise<Array<HudLayout>> { return this.call(() => this.actor.getAllHudCodes()); }
     async getAllRegistrations(): Promise<[Array<StudentRegistration>, bigint]> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllRegistrations();
-                return [
-                    result[0],
-                    result[1]
-                ];
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllRegistrations();
-            return [
-                result[0],
-                result[1]
-            ];
-        }
+        return this.call(async () => { const r = await this.actor.getAllRegistrations(); return [r[0], r[1]]; });
     }
-    async getChaptersBySubject(arg0: string): Promise<Array<PdfChapter>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getChaptersBySubject(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getChaptersBySubject(arg0);
-            return result;
-        }
-    }
-    async getChaptersBySubjectAndClass(arg0: string, arg1: string): Promise<Array<PdfChapter>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getChaptersBySubjectAndClass(arg0, arg1);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getChaptersBySubjectAndClass(arg0, arg1);
-            return result;
-        }
-    }
-    async getHudCodeByName(arg0: string): Promise<HudLayout> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getHudCodeByName(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getHudCodeByName(arg0);
-            return result;
-        }
-    }
-    async registerStudent(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.registerStudent(arg0, arg1, arg2, arg3, arg4);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.registerStudent(arg0, arg1, arg2, arg3, arg4);
-            return result;
-        }
-    }
-    async setAdminLastSeen(): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.setAdminLastSeen();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.setAdminLastSeen();
-            return result;
-        }
-    }
-    async addNotice(arg0: string): Promise<bigint> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.addNotice(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.addNotice(arg0);
-            return result;
-        }
-    }
-    async deleteNotice(arg0: bigint): Promise<boolean> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.deleteNotice(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.deleteNotice(arg0);
-            return result;
-        }
-    }
-    async getNotices(): Promise<Array<Notice>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getNotices();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getNotices();
-            return result;
-        }
-    }
+    async getChaptersBySubject(a: string): Promise<Array<PdfChapter>> { return this.call(() => this.actor.getChaptersBySubject(a)); }
+    async getChaptersBySubjectAndClass(a: string, b: string): Promise<Array<PdfChapter>> { return this.call(() => this.actor.getChaptersBySubjectAndClass(a, b)); }
+    async getHudCodeByName(a: string): Promise<HudLayout> { return this.call(() => this.actor.getHudCodeByName(a)); }
+    async registerStudent(a: string, b: string, c: string, d: string, e: string): Promise<void> { return this.call(() => this.actor.registerStudent(a, b, c, d, e)); }
+    async setAdminLastSeen(): Promise<void> { return this.call(() => this.actor.setAdminLastSeen()); }
+    async setHeroPhoto(a: string): Promise<void> { return this.call(() => this.actor.setHeroPhoto(a)); }
+    async getHeroPhoto(): Promise<string> { return this.call(() => this.actor.getHeroPhoto()); }
+    async addNotice(a: string): Promise<bigint> { return this.call(() => this.actor.addNotice(a)); }
+    async deleteNotice(a: bigint): Promise<boolean> { return this.call(() => this.actor.deleteNotice(a)); }
+    async getNotices(): Promise<Array<Notice>> { return this.call(() => this.actor.getNotices()); }
+    async markAttendance(a: string, b: string, c: string, d: string): Promise<string> { return this.call(() => this.actor.markAttendance(a, b, c, d)); }
+    async getAllAttendance(): Promise<Array<AttendanceRecord>> { return this.call(() => this.actor.getAllAttendance()); }
+    async getAttendanceByDate(a: string): Promise<Array<AttendanceRecord>> { return this.call(() => this.actor.getAttendanceByDate(a)); }
+    async getAttendanceByClassAndDate(a: string, b: string): Promise<Array<AttendanceRecord>> { return this.call(() => this.actor.getAttendanceByClassAndDate(a, b)); }
+    async setAttendanceWindow(a: boolean): Promise<void> { return this.call(() => this.actor.setAttendanceWindow(a)); }
+    async getAttendanceWindowStatus(): Promise<boolean> { return this.call(() => this.actor.getAttendanceWindowStatus()); }
 }
 export interface CreateActorOptions {
     agent?: Agent;
@@ -341,16 +166,10 @@ export interface CreateActorOptions {
     processError?: (error: unknown) => never;
 }
 export function createActor(canisterId: string, _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, options: CreateActorOptions = {}): Backend {
-    const agent = options.agent || HttpAgent.createSync({
-        ...options.agentOptions
-    });
+    const agent = options.agent || HttpAgent.createSync({ ...options.agentOptions });
     if (options.agent && options.agentOptions) {
         console.warn("Detected both agent and agentOptions passed to createActor. Ignoring agentOptions and proceeding with the provided agent.");
     }
-    const actor = Actor.createActor<_SERVICE>(idlFactory, {
-        agent,
-        canisterId: canisterId,
-        ...options.actorOptions
-    });
+    const actor = Actor.createActor<_SERVICE>(idlFactory, { agent, canisterId, ...options.actorOptions });
     return new Backend(actor, _uploadFile, _downloadFile, options.processError);
 }

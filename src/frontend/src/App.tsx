@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect, useState } from "react";
 import AdminPanel from "./components/AdminPanel";
+import AttendanceSection from "./components/AttendanceSection";
 import ContactSection from "./components/ContactSection";
 import CoursePaymentSection from "./components/CoursePaymentSection";
 import FeaturesSection from "./components/FeaturesSection";
@@ -45,6 +46,7 @@ export default function App() {
         <FeaturesSection />
         <CoursePaymentSection />
         <RegistrationForm />
+        <AttendanceSection />
         <ContactSection />
       </main>
       <Footer />

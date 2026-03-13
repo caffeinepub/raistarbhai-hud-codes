@@ -27,6 +27,18 @@ export const StudentRegistration = IDL.Record({
   'className' : IDL.Text,
   'parentName' : IDL.Text,
 });
+export const Notice = IDL.Record({
+  'id' : IDL.Nat,
+  'text' : IDL.Text,
+  'createdAt' : IDL.Int,
+});
+export const AttendanceRecord = IDL.Record({
+  'studentName' : IDL.Text,
+  'className' : IDL.Text,
+  'rollNumber' : IDL.Text,
+  'date' : IDL.Text,
+  'markedAt' : IDL.Int,
+});
 
 export const idlService = IDL.Service({
   'addPdfChapter' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
@@ -34,28 +46,23 @@ export const idlService = IDL.Service({
   'getAdminLastSeen' : IDL.Func([], [IDL.Int], ['query']),
   'getAllChapters' : IDL.Func([], [IDL.Vec(PdfChapter)], ['query']),
   'getAllHudCodes' : IDL.Func([], [IDL.Vec(HudLayout)], ['query']),
-  'getAllRegistrations' : IDL.Func(
-      [],
-      [IDL.Vec(StudentRegistration), IDL.Int],
-      ['query'],
-    ),
-  'getChaptersBySubject' : IDL.Func(
-      [IDL.Text],
-      [IDL.Vec(PdfChapter)],
-      ['query'],
-    ),
-  'getChaptersBySubjectAndClass' : IDL.Func(
-      [IDL.Text, IDL.Text],
-      [IDL.Vec(PdfChapter)],
-      ['query'],
-    ),
+  'getAllRegistrations' : IDL.Func([], [IDL.Vec(StudentRegistration), IDL.Int], ['query']),
+  'getChaptersBySubject' : IDL.Func([IDL.Text], [IDL.Vec(PdfChapter)], ['query']),
+  'getChaptersBySubjectAndClass' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(PdfChapter)], ['query']),
   'getHudCodeByName' : IDL.Func([IDL.Text], [HudLayout], ['query']),
-  'registerStudent' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
-      [],
-      [],
-    ),
+  'registerStudent' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
   'setAdminLastSeen' : IDL.Func([], [], []),
+  'setHeroPhoto' : IDL.Func([IDL.Text], [], []),
+  'getHeroPhoto' : IDL.Func([], [IDL.Text], ['query']),
+  'addNotice' : IDL.Func([IDL.Text], [IDL.Nat], []),
+  'deleteNotice' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+  'getNotices' : IDL.Func([], [IDL.Vec(Notice)], ['query']),
+  'markAttendance' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [IDL.Text], []),
+  'getAllAttendance' : IDL.Func([], [IDL.Vec(AttendanceRecord)], ['query']),
+  'getAttendanceByDate' : IDL.Func([IDL.Text], [IDL.Vec(AttendanceRecord)], ['query']),
+  'getAttendanceByClassAndDate' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(AttendanceRecord)], ['query']),
+  'setAttendanceWindow' : IDL.Func([IDL.Bool], [], []),
+  'getAttendanceWindowStatus' : IDL.Func([], [IDL.Bool], ['query']),
 });
 
 export const idlInitArgs = [];
@@ -80,39 +87,42 @@ export const idlFactory = ({ IDL }) => {
     'className' : IDL.Text,
     'parentName' : IDL.Text,
   });
-  
+  const Notice = IDL.Record({
+    'id' : IDL.Nat,
+    'text' : IDL.Text,
+    'createdAt' : IDL.Int,
+  });
+  const AttendanceRecord = IDL.Record({
+    'studentName' : IDL.Text,
+    'className' : IDL.Text,
+    'rollNumber' : IDL.Text,
+    'date' : IDL.Text,
+    'markedAt' : IDL.Int,
+  });
+
   return IDL.Service({
-    'addPdfChapter' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
-        [],
-        [],
-      ),
+    'addPdfChapter' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
     'deletePdfChapter' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'getAdminLastSeen' : IDL.Func([], [IDL.Int], ['query']),
     'getAllChapters' : IDL.Func([], [IDL.Vec(PdfChapter)], ['query']),
     'getAllHudCodes' : IDL.Func([], [IDL.Vec(HudLayout)], ['query']),
-    'getAllRegistrations' : IDL.Func(
-        [],
-        [IDL.Vec(StudentRegistration), IDL.Int],
-        ['query'],
-      ),
-    'getChaptersBySubject' : IDL.Func(
-        [IDL.Text],
-        [IDL.Vec(PdfChapter)],
-        ['query'],
-      ),
-    'getChaptersBySubjectAndClass' : IDL.Func(
-        [IDL.Text, IDL.Text],
-        [IDL.Vec(PdfChapter)],
-        ['query'],
-      ),
+    'getAllRegistrations' : IDL.Func([], [IDL.Vec(StudentRegistration), IDL.Int], ['query']),
+    'getChaptersBySubject' : IDL.Func([IDL.Text], [IDL.Vec(PdfChapter)], ['query']),
+    'getChaptersBySubjectAndClass' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(PdfChapter)], ['query']),
     'getHudCodeByName' : IDL.Func([IDL.Text], [HudLayout], ['query']),
-    'registerStudent' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
-        [],
-        [],
-      ),
+    'registerStudent' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
     'setAdminLastSeen' : IDL.Func([], [], []),
+    'setHeroPhoto' : IDL.Func([IDL.Text], [], []),
+    'getHeroPhoto' : IDL.Func([], [IDL.Text], ['query']),
+    'addNotice' : IDL.Func([IDL.Text], [IDL.Nat], []),
+    'deleteNotice' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+    'getNotices' : IDL.Func([], [IDL.Vec(Notice)], ['query']),
+    'markAttendance' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [IDL.Text], []),
+    'getAllAttendance' : IDL.Func([], [IDL.Vec(AttendanceRecord)], ['query']),
+    'getAttendanceByDate' : IDL.Func([IDL.Text], [IDL.Vec(AttendanceRecord)], ['query']),
+    'getAttendanceByClassAndDate' : IDL.Func([IDL.Text, IDL.Text], [IDL.Vec(AttendanceRecord)], ['query']),
+    'setAttendanceWindow' : IDL.Func([IDL.Bool], [], []),
+    'getAttendanceWindowStatus' : IDL.Func([], [IDL.Bool], ['query']),
   });
 };
 
