@@ -31,6 +31,13 @@ export interface Notice {
     text: string;
     createdAt: bigint;
 }
+export interface AttendanceRecord {
+    studentName: string;
+    className: string;
+    rollNumber: string;
+    date: string;
+    markedAt: bigint;
+}
 export interface backendInterface {
     addPdfChapter(subject: string, chapterName: string, pdfUrl: string, className: string): Promise<void>;
     deletePdfChapter(chapterId: bigint): Promise<boolean>;
@@ -46,4 +53,12 @@ export interface backendInterface {
     addNotice(text: string): Promise<bigint>;
     deleteNotice(id: bigint): Promise<boolean>;
     getNotices(): Promise<Array<Notice>>;
+    setHeroPhoto(url: string): Promise<void>;
+    getHeroPhoto(): Promise<string>;
+    markAttendance(studentName: string, className: string, rollNumber: string, date: string): Promise<string>;
+    getAllAttendance(): Promise<Array<AttendanceRecord>>;
+    getAttendanceByDate(date: string): Promise<Array<AttendanceRecord>>;
+    getAttendanceByClassAndDate(className: string, date: string): Promise<Array<AttendanceRecord>>;
+    setAttendanceWindow(isOpen: boolean): Promise<void>;
+    getAttendanceWindowStatus(): Promise<boolean>;
 }

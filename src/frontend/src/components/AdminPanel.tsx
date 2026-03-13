@@ -23,6 +23,7 @@ import { useActor } from "@/hooks/useActor";
 import {
   Bell,
   CalendarCheck,
+  Camera,
   GraduationCap,
   Loader2,
   Lock,
@@ -131,6 +132,9 @@ export default function AdminPanel() {
     boolean | null
   >(null);
   const [isTogglingWindow, setIsTogglingWindow] = useState(false);
+  const [heroPhotoUrl, setHeroPhotoUrl] = useState("");
+  const [heroPhotoPreview, setHeroPhotoPreview] = useState("");
+  const [isSavingHeroPhoto, setIsSavingHeroPhoto] = useState(false);
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
@@ -229,6 +233,10 @@ export default function AdminPanel() {
       fetchRegistrations();
       fetchPdfs();
       fetchNotices();
+      actor
+        .getHeroPhoto()
+        .then((url: string) => setHeroPhotoUrl(url || ""))
+        .catch(() => {});
     }
   }, [isLoggedIn, actor, fetchRegistrations, fetchPdfs, fetchNotices]);
 
@@ -494,6 +502,10 @@ export default function AdminPanel() {
             <TabsTrigger value="attendance" data-ocid="admin.tab">
               <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />
               Attendance
+            </TabsTrigger>
+            <TabsTrigger value="hero-photo" data-ocid="admin.tab">
+              <Camera className="w-3.5 h-3.5 mr-1.5" />
+              Hero Photo
             </TabsTrigger>
           </TabsList>
 
@@ -1123,6 +1135,106 @@ export default function AdminPanel() {
                     </Table>
                   </div>
                 )}
+              </div>
+            </div>
+          </TabsContent>
+          {/* Hero Photo Tab */}
+          <TabsContent value="hero-photo">
+            <div className="space-y-6">
+              <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+                <Camera className="w-5 h-5 text-primary" />
+                Hero Photo Upload
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Yeh photo app mein "BSEB BOARD SONU SIR" heading ke niche
+                dikhegi.
+              </p>
+
+              {heroPhotoUrl && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Abhi ki photo:
+                  </p>
+                  <img
+                    src={heroPhotoUrl}
+                    alt="Abhi ki tasveer"
+                    className="rounded-lg max-h-48 w-auto shadow-md object-cover border border-border"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="hero-photo-input"
+                    className="text-sm font-medium"
+                  >
+                    Naya Photo Choose Karein
+                  </Label>
+                  <input
+                    id="hero-photo-input"
+                    type="file"
+                    accept="image/*"
+                    data-ocid="admin.hero_photo.upload_button"
+                    className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        setHeroPhotoPreview(
+                          (ev.target?.result as string) || "",
+                        );
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </div>
+
+                {heroPhotoPreview && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-foreground">
+                      Preview:
+                    </p>
+                    <img
+                      src={heroPhotoPreview}
+                      alt="Preview"
+                      className="rounded-lg max-h-48 w-auto shadow-md object-cover border border-border"
+                    />
+                  </div>
+                )}
+
+                <Button
+                  data-ocid="admin.hero_photo.save_button"
+                  disabled={!heroPhotoPreview || isSavingHeroPhoto || !actor}
+                  className="bg-primary text-primary-foreground hover:opacity-90"
+                  onClick={async () => {
+                    if (!actor || !heroPhotoPreview) return;
+                    setIsSavingHeroPhoto(true);
+                    try {
+                      await actor.setHeroPhoto(heroPhotoPreview);
+                      setHeroPhotoUrl(heroPhotoPreview);
+                      setHeroPhotoPreview("");
+                      toast.success("Photo save ho gayi!");
+                    } catch (err) {
+                      console.error(err);
+                      toast.error("Photo save nahi ho payi.");
+                    } finally {
+                      setIsSavingHeroPhoto(false);
+                    }
+                  }}
+                >
+                  {isSavingHeroPhoto ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-4 h-4 mr-2" /> Save Photo
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </TabsContent>

@@ -1,9 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useActor } from "@/hooks/useActor";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { Award, BookOpen, Download, Share2, Star, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const stats = [
   { icon: Users, value: "500+", label: "Students" },
@@ -15,6 +16,16 @@ const stats = [
 export default function HeroSection() {
   const { isInstallable, isInstalled, isIOS, triggerInstall } = usePWAInstall();
   const [showIOSHint, setShowIOSHint] = useState(false);
+  const { actor, isFetching } = useActor();
+  const [heroPhotoUrl, setHeroPhotoUrl] = useState("");
+
+  useEffect(() => {
+    if (!actor || isFetching) return;
+    actor
+      .getHeroPhoto()
+      .then((url: string) => setHeroPhotoUrl(url || ""))
+      .catch(() => {});
+  }, [actor, isFetching]);
 
   const handleInstallClick = async () => {
     if (isIOS) {
@@ -53,8 +64,24 @@ export default function HeroSection() {
             </h1>
 
             <p className="text-xl md:text-2xl font-semibold text-primary mb-3">
-              "Ghar Baithe Padho, Safalta Pao"
+              &quot;Ghar Baithe Padho, Safalta Pao&quot;
             </p>
+
+            {/* Admin-uploaded hero photo */}
+            {heroPhotoUrl && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
+                className="mb-6"
+              >
+                <img
+                  src={heroPhotoUrl}
+                  alt="Sonu Sir"
+                  className="rounded-lg max-h-48 w-auto mx-auto shadow-md object-cover"
+                />
+              </motion.div>
+            )}
 
             <p className="text-muted-foreground text-base leading-relaxed mb-8 max-w-lg">
               Class 6 se 11 tak ke liye expert guidance. Har subject mein
@@ -112,7 +139,8 @@ export default function HeroSection() {
                   data-ocid="hero.install_ios_hint"
                 >
                   <Share2 className="h-4 w-4 flex-shrink-0" />
-                  Share button tap karo → "Add to Home Screen" select karo
+                  Share button tap karo → &quot;Add to Home Screen&quot; select
+                  karo
                 </motion.div>
               )}
             </AnimatePresence>
