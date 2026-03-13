@@ -30,12 +30,12 @@ export default function Navbar() {
         >
           <img
             src="/assets/uploads/Screenshot_20260310-195245-1.jpg"
-            alt="Sonu Sir Class Logo"
+            alt="BSEB BOARD SONU SIR Logo"
             className="w-10 h-10 rounded-full object-cover shadow-sm border border-border"
           />
           <div>
             <span className="font-display font-bold text-lg text-foreground leading-none block">
-              Sonu Sir Class
+              BSEB BOARD SONU SIR
             </span>
             <span className="text-xs text-muted-foreground leading-none">
               Quality Education

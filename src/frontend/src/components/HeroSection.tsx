@@ -47,9 +47,9 @@ export default function HeroSection() {
             </Badge>
 
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-4">
-              <span className="text-gradient-edu">Sonu Sir</span>
+              <span className="text-gradient-edu">BSEB BOARD</span>
               <br />
-              <span className="text-foreground">Class</span>
+              <span className="text-foreground">SONU SIR</span>
             </h1>
 
             <p className="text-xl md:text-2xl font-semibold text-primary mb-3">
@@ -57,7 +57,7 @@ export default function HeroSection() {
             </p>
 
             <p className="text-muted-foreground text-base leading-relaxed mb-8 max-w-lg">
-              Class 1 se 12 tak ke liye expert guidance. Har subject mein
+              Class 6 se 11 tak ke liye expert guidance. Har subject mein
               complete support, regular tests aur personal attention ke saath
               aapka result guarantee.
             </p>
@@ -133,12 +133,12 @@ export default function HeroSection() {
                   <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden border-2 border-primary/20 shadow-blue-soft">
                     <img
                       src="/assets/uploads/Screenshot_20260310-195245-1.jpg"
-                      alt="Sonu Sir Class"
+                      alt="BSEB BOARD SONU SIR"
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <h2 className="font-display font-bold text-xl text-foreground mb-1">
-                    Sonu Sir Class
+                    BSEB BOARD SONU SIR
                   </h2>
                   <p className="text-muted-foreground text-sm mb-4">
                     Premium Tuition &amp; Coaching
@@ -148,7 +148,7 @@ export default function HeroSection() {
                       "Maths — Expert Faculty",
                       "Science — Lab Practicals",
                       "English — Spoken + Grammar",
-                      "All India Board Coverage",
+                      "Bihar Board Coverage",
                     ].map((item) => (
                       <div
                         key={item}

@@ -73,6 +73,17 @@ interface Notice {
   createdAt: bigint;
 }
 
+function normalizeRegistration(raw: any): Registration {
+  return {
+    studentName: raw.studentName || raw.student_name || raw.name || "",
+    className: raw.className || raw.class_name || raw.className || "",
+    subject: raw.subject || "",
+    mobile: raw.mobile || "",
+    parentName: raw.parentName || raw.parent_name || "",
+    registeredAt: raw.registeredAt || raw.registered_at || BigInt(0),
+  };
+}
+
 export default function AdminPanel() {
   const { actor, isFetching } = useActor();
   const [password, setPassword] = useState("");
@@ -123,11 +134,13 @@ export default function AdminPanel() {
     setIsLoadingRegs(true);
     setRegError("");
     try {
-      const [regs, lastSeen] = await actor.getAllRegistrations();
-      setRegistrations(regs as Registration[]);
+      const result = await actor.getAllRegistrations();
+      // Backend returns [Array<StudentRegistration>, bigint]
+      const [regs, lastSeen] = result as [any[], bigint];
+      setRegistrations(regs.map(normalizeRegistration));
       setAdminLastSeen(lastSeen);
     } catch (err) {
-      console.error(err);
+      console.error("fetchRegistrations error:", err);
       setRegError("Registrations load nahi ho payi.");
     } finally {
       setIsLoadingRegs(false);
@@ -621,12 +634,12 @@ export default function AdminPanel() {
                                 {i + 1}
                               </TableCell>
                               <TableCell className="font-medium">
-                                {reg.studentName}
+                                {reg.studentName.trim() || "—"}
                               </TableCell>
-                              <TableCell>{reg.className}</TableCell>
-                              <TableCell>{reg.subject}</TableCell>
+                              <TableCell>{reg.className || "—"}</TableCell>
+                              <TableCell>{reg.subject || "—"}</TableCell>
                               <TableCell className="font-mono">
-                                {reg.mobile}
+                                {reg.mobile || "—"}
                               </TableCell>
                               <TableCell>{reg.parentName || "—"}</TableCell>
                               <TableCell className="text-xs text-muted-foreground">
