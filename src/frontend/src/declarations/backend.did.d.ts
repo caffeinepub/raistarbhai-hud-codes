@@ -34,6 +34,13 @@ export interface StudentRegistration {
   'className' : string,
   'parentName' : string,
 }
+export interface AttendanceRecord {
+  'studentName' : string,
+  'className' : string,
+  'rollNumber' : string,
+  'date' : string,
+  'markedAt' : bigint,
+}
 export interface _SERVICE {
   'addNotice' : ActorMethod<[string], bigint>,
   'addPdfChapter' : ActorMethod<[string, string, string, string], undefined>,
@@ -44,17 +51,19 @@ export interface _SERVICE {
   'getAllHudCodes' : ActorMethod<[], Array<HudLayout>>,
   'getAllRegistrations' : ActorMethod<[], [Array<StudentRegistration>, bigint]>,
   'getChaptersBySubject' : ActorMethod<[string], Array<PdfChapter>>,
-  'getChaptersBySubjectAndClass' : ActorMethod<
-    [string, string],
-    Array<PdfChapter>
-  >,
+  'getChaptersBySubjectAndClass' : ActorMethod<[string, string], Array<PdfChapter>>,
   'getHudCodeByName' : ActorMethod<[string], HudLayout>,
   'getNotices' : ActorMethod<[], Array<Notice>>,
-  'registerStudent' : ActorMethod<
-    [string, string, string, string, string],
-    undefined
-  >,
+  'registerStudent' : ActorMethod<[string, string, string, string, string], undefined>,
   'setAdminLastSeen' : ActorMethod<[], undefined>,
+  'setHeroPhoto' : ActorMethod<[string], undefined>,
+  'getHeroPhoto' : ActorMethod<[], string>,
+  'markAttendance' : ActorMethod<[string, string, string, string], string>,
+  'getAllAttendance' : ActorMethod<[], Array<AttendanceRecord>>,
+  'getAttendanceByDate' : ActorMethod<[string], Array<AttendanceRecord>>,
+  'getAttendanceByClassAndDate' : ActorMethod<[string, string], Array<AttendanceRecord>>,
+  'setAttendanceWindow' : ActorMethod<[boolean], undefined>,
+  'getAttendanceWindowStatus' : ActorMethod<[], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
