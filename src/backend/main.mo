@@ -31,6 +31,7 @@ actor {
     createdAt : Int;
   };
 
+  // Legacy type kept for upgrade compatibility (attendance removed)
   type AttendanceRecord = {
     studentName : Text;
     className : Text;
@@ -39,17 +40,19 @@ actor {
     markedAt : Int;
   };
 
+  // Legacy stable vars — kept to prevent upgrade compatibility errors
+  stable var stableAttendance : [(Nat, AttendanceRecord)] = [];
+  stable var stableNextAttendanceId : Nat = 0;
+  stable var heroPhotoUrl : Text = "";
+  stable var attendanceWindowOpen : Bool = false;
+
   stable var stableRegistrations : [(Nat, StudentRegistration)] = [];
   stable var stableChapters : [(Nat, PdfChapter)] = [];
   stable var stableNotices : [(Nat, Notice)] = [];
-  stable var stableAttendance : [(Nat, AttendanceRecord)] = [];
   stable var stableNextId : Nat = 0;
   stable var stableNextChapterId : Nat = 0;
   stable var stableNextNoticeId : Nat = 0;
-  stable var stableNextAttendanceId : Nat = 0;
   stable var adminLastSeen : Int = 0;
-  stable var heroPhotoUrl : Text = "";
-  stable var attendanceWindowOpen : Bool = false;
 
   let registrations = Map.fromIter<Nat, StudentRegistration>(
     stableRegistrations.values()
@@ -66,6 +69,7 @@ actor {
   );
   var nextNoticeId = stableNextNoticeId;
 
+  // Legacy vars kept with original names to preserve stable variable identity
   let attendanceMap = Map.fromIter<Nat, AttendanceRecord>(
     stableAttendance.values()
   );
@@ -75,11 +79,12 @@ actor {
     stableRegistrations := registrations.entries().toArray();
     stableChapters := chapters.entries().toArray();
     stableNotices := noticeMap.entries().toArray();
-    stableAttendance := attendanceMap.entries().toArray();
     stableNextId := nextId;
     stableNextChapterId := nextChapterId;
     stableNextNoticeId := nextNoticeId;
-    stableNextAttendanceId := nextAttendanceId;
+    // Clear legacy attendance data
+    stableAttendance := [];
+    stableNextAttendanceId := 0;
   };
 
   system func postupgrade() {
@@ -155,15 +160,6 @@ actor {
     adminLastSeen;
   };
 
-  // Hero Photo
-  public shared ({ caller }) func setHeroPhoto(url : Text) : async () {
-    heroPhotoUrl := url;
-  };
-
-  public query ({ caller }) func getHeroPhoto() : async Text {
-    heroPhotoUrl;
-  };
-
   // Notice Board
   public shared ({ caller }) func addNotice(text : Text) : async Nat {
     let notice : Notice = {
@@ -188,53 +184,6 @@ actor {
 
   public query ({ caller }) func getNotices() : async [Notice] {
     noticeMap.values().toArray();
-  };
-
-  // Attendance Window Control
-  public shared ({ caller }) func setAttendanceWindow(isOpen : Bool) : async () {
-    attendanceWindowOpen := isOpen;
-  };
-
-  public query ({ caller }) func getAttendanceWindowStatus() : async Bool {
-    attendanceWindowOpen;
-  };
-
-  // Attendance System
-  public shared ({ caller }) func markAttendance(studentName : Text, className : Text, rollNumber : Text, date : Text) : async Text {
-    if (not attendanceWindowOpen) {
-      return "closed";
-    };
-    var alreadyMarked = false;
-    for ((_, r) in attendanceMap.entries()) {
-      if (Text.equal(r.rollNumber, rollNumber) and Text.equal(r.className, className) and Text.equal(r.date, date)) {
-        alreadyMarked := true;
-      };
-    };
-    if (alreadyMarked) {
-      return "alreadyMarked";
-    };
-    let record : AttendanceRecord = {
-      studentName;
-      className;
-      rollNumber;
-      date;
-      markedAt = Time.now();
-    };
-    attendanceMap.add(nextAttendanceId, record);
-    nextAttendanceId += 1;
-    "ok";
-  };
-
-  public query ({ caller }) func getAllAttendance() : async [AttendanceRecord] {
-    attendanceMap.values().toArray();
-  };
-
-  public query ({ caller }) func getAttendanceByDate(date : Text) : async [AttendanceRecord] {
-    attendanceMap.values().toArray().filter(func(r : AttendanceRecord) : Bool { Text.equal(r.date, date) });
-  };
-
-  public query ({ caller }) func getAttendanceByClassAndDate(className : Text, date : Text) : async [AttendanceRecord] {
-    attendanceMap.values().toArray().filter(func(r : AttendanceRecord) : Bool { Text.equal(r.className, className) and Text.equal(r.date, date) });
   };
 
   type HudLayout = {

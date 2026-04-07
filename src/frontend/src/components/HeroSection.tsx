@@ -1,10 +1,20 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useActor } from "@/hooks/useActor";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
-import { Award, BookOpen, Download, Share2, Star, Users } from "lucide-react";
+import {
+  Award,
+  BookOpen,
+  Download,
+  Share2,
+  Star,
+  Users,
+  Youtube,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+const YOUTUBE_URL = "https://youtube.com/@raibrothers12m?si=ATpjg92UfBU-IxQv";
+const YOUTUBE_VIDEO_ID = "6Hipo2xmhFs";
 
 const stats = [
   { icon: Users, value: "500+", label: "Students" },
@@ -16,16 +26,6 @@ const stats = [
 export default function HeroSection() {
   const { isInstallable, isInstalled, isIOS, triggerInstall } = usePWAInstall();
   const [showIOSHint, setShowIOSHint] = useState(false);
-  const { actor, isFetching } = useActor();
-  const [heroPhotoUrl, setHeroPhotoUrl] = useState("");
-
-  useEffect(() => {
-    if (!actor || isFetching) return;
-    actor
-      .getHeroPhoto()
-      .then((url: string) => setHeroPhotoUrl(url || ""))
-      .catch(() => {});
-  }, [actor, isFetching]);
 
   const handleInstallClick = async () => {
     if (isIOS) {
@@ -67,27 +67,32 @@ export default function HeroSection() {
               &quot;Ghar Baithe Padho, Safalta Pao&quot;
             </p>
 
-            {/* Admin-uploaded hero photo */}
-            {heroPhotoUrl && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4 }}
-                className="mb-6"
-              >
-                <img
-                  src={heroPhotoUrl}
-                  alt="Sonu Sir"
-                  className="rounded-lg max-h-48 w-auto mx-auto shadow-md object-cover"
-                />
-              </motion.div>
-            )}
-
-            <p className="text-muted-foreground text-base leading-relaxed mb-8 max-w-lg">
+            <p className="text-muted-foreground text-base leading-relaxed mb-6 max-w-lg">
               Class 6 se 11 tak ke liye expert guidance. Har subject mein
               complete support, regular tests aur personal attention ke saath
               aapka result guarantee.
             </p>
+
+            {/* YouTube Subscribe Banner */}
+            <motion.a
+              href={YOUTUBE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-ocid="hero.youtube_banner_link"
+              className="block mb-4"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <img
+                src="/assets/generated/youtube-subscribe-banner.dim_800x200.jpg"
+                alt="Subscribe to YouTube - RaiBrothers12M"
+                className="w-full max-w-lg rounded-xl shadow-lg border border-red-100 object-cover"
+                style={{ maxHeight: "120px" }}
+              />
+            </motion.a>
 
             <div className="flex flex-wrap gap-3">
               <a href="#register">
@@ -107,6 +112,18 @@ export default function HeroSection() {
                   data-ocid="hero.secondary_button"
                 >
                   Subjects Dekhein
+                </Button>
+              </a>
+
+              {/* YouTube Channel Button */}
+              <a href={YOUTUBE_URL} target="_blank" rel="noopener noreferrer">
+                <Button
+                  size="lg"
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold px-8 gap-2 shadow-md"
+                  data-ocid="hero.youtube_button"
+                >
+                  <Youtube className="h-5 w-5" />
+                  YouTube Par Padhein
                 </Button>
               </a>
 
@@ -146,59 +163,30 @@ export default function HeroSection() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Right: Preview card */}
+          {/* Right: YouTube Video Embed */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, ease: "easeOut", delay: 0.15 }}
-            className="hidden md:flex justify-center"
+            className="flex justify-center"
           >
-            <div className="relative w-full max-w-sm">
-              {/* Main card */}
-              <div className="form-card p-8 relative overflow-hidden">
-                <div className="form-header-stripe absolute top-0 left-0 right-0" />
-                <div className="pt-2 text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden border-2 border-primary/20 shadow-blue-soft">
-                    <img
-                      src="/assets/uploads/Screenshot_20260310-195245-1.jpg"
-                      alt="BSEB BOARD SONU SIR"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h2 className="font-display font-bold text-xl text-foreground mb-1">
-                    BSEB BOARD SONU SIR
-                  </h2>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    Premium Tuition &amp; Coaching
-                  </p>
-                  <div className="space-y-2.5 text-left">
-                    {[
-                      "Maths — Expert Faculty",
-                      "Science — Lab Practicals",
-                      "English — Spoken + Grammar",
-                      "Bihar Board Coverage",
-                    ].map((item) => (
-                      <div
-                        key={item}
-                        className="flex items-center gap-2.5 text-sm text-foreground"
-                      >
-                        <div className="w-4 h-4 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                          <div className="w-2 h-2 rounded-full bg-success" />
-                        </div>
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            <div className="relative w-full max-w-lg">
+              <div
+                className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-red-500/30"
+                style={{ paddingTop: "56.25%" }}
+              >
+                <iframe
+                  className="absolute top-0 left-0 w-full h-full"
+                  src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?rel=0&modestbranding=1`}
+                  title="BSEB BOARD SONU SIR - YouTube Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
               </div>
-
-              {/* Floating badge top-right */}
-              <div className="absolute -top-4 -right-4 bg-primary text-primary-foreground rounded-xl px-3 py-2 shadow-blue-strong text-sm font-bold">
-                ✨ Free Demo Class
-              </div>
-              {/* Floating badge bottom-left */}
-              <div className="absolute -bottom-3 -left-4 bg-success text-success-foreground rounded-xl px-3 py-2 shadow-blue-soft text-sm font-bold">
-                📚 Offline + Online
+              {/* Label below video */}
+              <div className="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-red-600">
+                <Youtube className="h-4 w-4" />
+                <span>YouTube Par Padhein – Subscribe Zaroor Karein!</span>
               </div>
             </div>
           </motion.div>
